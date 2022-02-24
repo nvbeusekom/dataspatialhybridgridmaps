@@ -12,11 +12,24 @@ import nl.tue.geometrycore.geometry.linear.Polygon;
  * @author wmeulema
  */
 public class Tile {
-
     Polygon shape;
     Vector center;
     Region assigned = null;
+    double currentMI;
 
+    public Tile(Polygon shape, Vector center) {
+        this.shape = shape;
+        this.center = center;
+    }
+    
+    public Tile(Polygon shape, Vector center, Region assigned) {
+        this.shape = shape;
+        this.center = center;
+        this.assigned = assigned;
+    }
+
+    
+    
     public Region getAssigned() {
         return assigned;
     }
@@ -39,6 +52,41 @@ public class Tile {
 
     public void setCenter(Vector center) {
         this.center = center;
+    }
+    
+    public String getLabel() {
+        if(assigned == null){
+            return "";
+        }
+        return assigned.getLabel();
+    }
+    
+    public double getData(){
+        if(assigned == null){
+            return -1;
+        }
+        return assigned.getData();
+    }
+
+    public double getCurrentMI() {
+        return currentMI;
+    }
+
+    public void setCurrentMI(double currentMI) {
+        this.currentMI = currentMI;
+    }
+    
+    public double getLength(){
+        return this.getShape().edge(0).length();
+    }
+    
+    @Override 
+    public Tile clone(){
+        return new Tile(this.shape.clone(),this.center.clone(), this.assigned);
+    }
+    
+    public boolean equals(Tile t){
+        return this.getCenter().isApproximately(t.getCenter());
     }
 
 }

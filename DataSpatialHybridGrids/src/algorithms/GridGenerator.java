@@ -17,8 +17,10 @@ public class GridGenerator {
     public static Grid generateSquareGrid(int cols, int rows, Rectangle rect) {
 
         Grid grid = new Grid(cols, rows);
-
+        rect = rect.clone();
+        rect.growToAspectRatio((double)cols/(double)rows);
         Rectangle cell = rect.clone();
+        
         cell.scale(1.0/cols, 1.0/rows, rect.leftTop());
         
         for (int c = 0; c < cols; c++) {
@@ -27,10 +29,8 @@ public class GridGenerator {
                 Rectangle p = cell.clone();
                 p.translate(c * cell.width(), -r * cell.height());
                 
-                Tile t = new Tile();
+                Tile t = new Tile(p.toPolygon(),p.center());
                 grid.set(c, r, t);
-                t.setShape(p.toPolygon());
-                t.setCenter(p.center());
                 
                 
             }

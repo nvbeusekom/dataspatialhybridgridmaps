@@ -4,6 +4,7 @@
  */
 package data;
 
+import java.awt.Color;
 import nl.tue.geometrycore.geometry.Vector;
 import nl.tue.geometrycore.geometry.linear.Polygon;
 
@@ -17,7 +18,11 @@ public class Region {
     Vector pos;
     Polygon shape;
     Tile assigned = null;
-
+    int initRow;
+    int initCol;
+    double data;
+    Color spatialColor = null;
+    
     public Tile getAssigned() {
         return assigned;
     }
@@ -50,6 +55,38 @@ public class Region {
 
     public void setShape(Polygon shape) {
         this.shape = shape;
+    }
+    
+    public void setData(double data){
+        this.data = data;
+    }
+    
+    public double getData(){
+        return data;
+    }
+
+    public int getInitRow() {
+        return initRow;
+    }
+
+    public int getInitCol() {
+        return initCol;
+    }
+
+    public void setInitRow(int initRow) {
+        this.initRow = initRow;
+    }
+
+    public void setInitCol(int initCol) {
+        this.initCol = initCol;
+    }
+
+    public void setSpatialColor(Color spatialColor) {
+        this.spatialColor = spatialColor;
+    }
+
+    public Color getSpatialColor() {
+        return spatialColor;
     }
 
 }
