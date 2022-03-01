@@ -98,10 +98,14 @@ public class SwapNearby {
             this.range = range;
             grid = initGrid.clone();
         }
-        double meank = 0;
+        double total = 0;
+        int count = 0;
         for (int i = 0; i < grid.getColumns(); i++) {
             for (int j = 0; j < grid.getRows(); j++) {
-                meank += grid.get(i,j).getData();
+                if(grid.get(i,j).getAssigned() != null){
+                    total += grid.get(i,j).getData();
+                    count++;
+                }
             }
             
         }
@@ -131,10 +135,10 @@ public class SwapNearby {
 //                                        (t2.getAssigned() == null || t2.getAssigned().getPos().distanceTo(t.getCenter()) <= range)) {
                                 if (Math.abs(i-t2.getAssigned().getInitCol()) <= range && Math.abs(j-t2.getAssigned().getInitRow())<= range){
                                     // Compute all MI values and add the swaps to the priority queue
-                                    double gain = getSwapGain(i,j,k,l,meank);
+                                    double gain = getSwapGain(i,j,k,l,total,count);
                                     // Only add beneficial swaps
                                     if(gain > 0){
-                                        Swap swap = new Swap(gain,index,i,j,k,l);
+                                        Swap swap = new Swap(gain,i,j,k,l);
                                         index++;
                                         q.add(swap);
                                     }
@@ -148,9 +152,7 @@ public class SwapNearby {
             
         } 
         // Work through Queue
-        double prev = -2;
         while(!q.isEmpty()){
-            System.out.println("Iteration");
             Swap s = q.poll();
             // Do the swap
             Tile t1 = grid.get(s.getI(), s.getJ());
@@ -163,118 +165,139 @@ public class SwapNearby {
             t2.setCenter(temp2);
             grid.set(s.getK(), s.getL(), t1);
             grid.set(s.getI(), s.getJ(), t2);
-            double newmi = grid.getMoransI();
-            if(newmi < prev){
-                System.out.println("New: " + newmi + " old: " + prev);
-                System.out.println(String.format("I swapped " + s.getI() + "," + s.getJ() + " with " + s.getK() + "," + s.getL()));
-                System.out.println(s.getMiGain());
-                System.out.println(getSwapGain(s.getI(),s.getJ(),s.getK(),s.getL(),meank));
-                grid.set(s.getI(), s.getJ(), t1);
-                grid.set(s.getK(), s.getL(), t2);
-                System.out.println(getSwapGain(s.getI(),s.getJ(),s.getK(),s.getL(),meank));
-                return 0;
-            }
-            prev = newmi;
-            System.out.println("The swap:");
-            System.out.println(s.getI());
-            System.out.println(s.getJ());
-            System.out.println(s.getK());
-            System.out.println(s.getL());
-            System.out.println(isSwap(s,2,12,3,12));
-            // Remove the ones that changed make index based on tile?
-            List<Swap> swaplist = q.extractContents();
+            // Add new ones around T1 and T2
+            boolean[][] aroundT1 = {{true,true,true},{true,true,true},{true,true,true}};
+            boolean[][] aroundT2 = {{true,true,true},{true,true,true},{true,true,true}};
+            List<Swap> swaplist = new ArrayList(q.extractContents());
             for(Swap swap : swaplist){
                 if(swap == null)
                     continue;
-                if(isSwap(swap,2,11,3,11)){
-                    System.out.println("Its in!!!!!!----------");
-                }
                 if(hasOverlappingTiles(s,swap)){
-                    System.out.println("Removing");
-                    
                     q.remove(swap);
                     index--;
                 }
-                else{
-                    swap.setMiGain(getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),meank));
-                    q.priorityChanged(swap);
-                }
-//                else if(isAdjacent(s,swap)){
-//                    System.out.println(swap.getIndex());
-//                    swap.setMiGain(getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),meank));
-//                    q.priorityChanged(swap);
-//                }
-            }
-            List<Swap> newlist = q.extractContents();
-            for(Swap swap : newlist){
-                if(swap == null)
-                    continue;
-                if(isSwap(swap,2,11,3,11)){
-                    System.out.println("Its in!!!!!!----------");
-                }
-                if(swap.getMiGain() != getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),meank)){
-                    System.out.println("Wrong Gain!!!a");
-                    System.out.println(swap.getMiGain());
-                    System.out.println(getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),meank));
-                    System.out.println(swap.getI());
-                    System.out.println(swap.getJ());
-                    System.out.println(swap.getK());
-                    System.out.println(swap.getL());
-                    return 0;
+                else if(isAdjacent(s.getK(),s.getL(),swap) || isAdjacent(s.getI(),s.getJ(),swap)){
+                    double gain = getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),total,count);
+                    if(gain > 0) {
+                        swap.setMiGain(gain);
+                        q.priorityChanged(swap);
+                    }
+                    else {
+                        q.remove(swap);
+                    }
+                    
                 }
             }
             // Add new possibilies
-            for (int i = -range*2; i <= range*2; i++) {
-                for (int j = -range*2; j <= range*2; j++) {
-                    if(!(i == 0 && j == 0)){
-                        // Do T1
-                        int cx = s.getK() + i;
-                        int cy = s.getL() + j;
-                        // Check if in bounds
-                        if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
-                            continue;
-                        }
-                        Tile candidate = grid.get(cx, cy);
-                        if(candidate.getAssigned() == null)
-                            continue;
-                        if((Math.abs(cx-t1.getAssigned().getInitCol()) <= range && Math.abs(cy-t1.getAssigned().getInitRow())<= range) &&
-                                (Math.abs(s.getK()-candidate.getAssigned().getInitCol()) <= range && Math.abs(s.getL()-candidate.getAssigned().getInitRow())<= range)){
-                            double gain = getSwapGain(s.getK(),s.getL(),cx,cy,meank);
-                            if(gain > 0){
-                                q.add(new Swap(gain,index,s.getK(),s.getL(),cx,cy));
-                                index++;
-                            }
-                        }
-                        // Do T2
-
-                        cx = s.getI() + i;
-                        cy = s.getJ() + j;
-                        if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
-                            continue;
-                        }
-                        candidate = grid.get(cx, cy);
-                        if(candidate.getAssigned() == null)
-                            continue;
-                        if((t2.getAssigned() == null || Math.abs(cx-t2.getAssigned().getInitCol()) <= range && Math.abs(cy-t2.getAssigned().getInitRow())<= range) &&
-                                (candidate.getAssigned() == null || Math.abs(s.getI()-candidate.getAssigned().getInitCol()) <= range && Math.abs(s.getJ()-candidate.getAssigned().getInitRow())<= range)){
-                            double gain = getSwapGain(s.getI(),s.getJ(),cx,cy,meank);
-                            if(gain > 0){
-                                q.add(new Swap(gain,index,s.getI(),s.getJ(),cx,cy));
-                                index++;
+            for (int a = -1; a <= 1 ; a++) {
+                for (int b = -1; b <= 1 ; b++) {
+                    for (int i = -range*2; i <= range*2; i++) {
+                        for (int j = -range*2; j <= range*2; j++) {
+                            if(!(i == 0 && j == 0)){
+                                // Do T1
+                                int tx = s.getK() + a;
+                                int ty = s.getL() + b;
+                                if(tx < 0 || ty  < 0 || tx >= grid.getColumns() || ty >= grid.getRows()){
+                                    continue;
+                                }
+                                Tile test1 = grid.get(tx, ty);
+                                if(test1.getAssigned() == null)
+                                    continue;
+                                int cx = tx + i;
+                                int cy = ty + j;
+                                // Check if in bounds
+                                if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
+                                    continue;
+                                }
+                                Tile candidate = grid.get(cx, cy);
+                                if(candidate.getAssigned() == null)
+                                    continue;
+                                if((Math.abs(cx-test1.getAssigned().getInitCol()) <= range && Math.abs(cy-test1.getAssigned().getInitRow())<= range) &&
+                                        (Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
+                                    double gain = getSwapGain(tx,ty,cx,cy,total,count);
+                                    if(gain > 0){
+                                        Swap newswap = new Swap(gain,tx,ty,cx,cy);
+                                        if(!q.contains(newswap)){
+                                            q.add(new Swap(gain,tx,ty,cx,cy));
+                                            index++;
+                                        }
+                                    }
+                                }
+                                // Do T2
+                                tx = s.getI() + a;
+                                ty = s.getJ() + b;
+                                if(tx < 0 || ty  < 0 || tx >= grid.getColumns() || ty >= grid.getRows()){
+                                    continue;
+                                }
+                                Tile test2 = grid.get(tx, ty);
+                                if(test2.getAssigned() == null)
+                                    continue;
+                                cx = tx + i;
+                                cy = ty + j;
+                                if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
+                                    continue;
+                                }
+                                candidate = grid.get(cx, cy);
+                                if(candidate.getAssigned() == null)
+                                    continue;
+                                if((test2.getAssigned() == null || Math.abs(cx-test2.getAssigned().getInitCol()) <= range && Math.abs(cy-test2.getAssigned().getInitRow())<= range) &&
+                                        (candidate.getAssigned() == null || Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
+                                    double gain = getSwapGain(tx,ty,cx,cy,total,count);
+                                    if(gain > 0){
+                                        Swap newswap = new Swap(gain,tx,ty,cx,cy);
+                                        if(!q.contains(newswap)){
+                                            q.add(new Swap(gain,tx,ty,cx,cy));
+                                            index++;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-            for(Swap swap : swaplist){
-                if(swap == null)
-                    continue;
-                if(swap.getMiGain() != getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),meank)){
-                    System.out.println("Wrong Gain!!!!");
-                    return 0;
-                }
-            }
-            System.out.println(q.size());
+//            for (int i = -range*2; i <= range*2; i++) {
+//                for (int j = -range*2; j <= range*2; j++) {
+//                    if(!(i == 0 && j == 0)){
+//                        // Do T1
+//                        int cx = tx + i;
+//                        int cy = ty + j;
+//                        // Check if in bounds
+//                        if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
+//                            continue;
+//                        }
+//                        Tile candidate = grid.get(cx, cy);
+//                        if(candidate.getAssigned() == null)
+//                            continue;
+//                        if((Math.abs(cx-test1.getAssigned().getInitCol()) <= range && Math.abs(cy-test1.getAssigned().getInitRow())<= range) &&
+//                                (Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
+//                            double gain = getSwapGain(tx,ty,cx,cy,total,count);
+//                            if(gain > 0){
+//                                q.add(new Swap(gain,tx,ty,cx,cy));
+//                                index++;
+//                            }
+//                        }
+//                        // Do T2
+//
+//                        cx = tx + i;
+//                        cy = ty + j;
+//                        if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
+//                            continue;
+//                        }
+//                        candidate = grid.get(cx, cy);
+//                        if(candidate.getAssigned() == null)
+//                            continue;
+//                        if((test2.getAssigned() == null || Math.abs(cx-test2.getAssigned().getInitCol()) <= range && Math.abs(cy-test2.getAssigned().getInitRow())<= range) &&
+//                                (candidate.getAssigned() == null || Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
+//                            double gain = getSwapGain(tx,ty,cx,cy,total,count);
+//                            if(gain > 0){
+//                                q.add(new Swap(gain,tx,ty,cx,cy));
+//                                index++;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
         
         return oldMI;
@@ -282,25 +305,31 @@ public class SwapNearby {
     public boolean isSwap(Swap s, int i, int j , int k, int l){
         return (s.getI() == i && s.getJ() == j && s.getK() == k && s.getL() == l);
     }
-    public double getSwapGain(int i, int j, int k, int l, double meank){
+    public double getSwapGain(int i, int j, int k, int l, double total, int count){
         Tile t = grid.get(i, j);
         Tile t2 = grid.get(k, l);
-        double currentMI = getMIatLoc(i,j,meank) + getMIatLoc(k,l,meank);
+        if(t.getAssigned() == null){
+            System.out.println("Its 1");
+        }
+        if(t2.getAssigned() == null){
+            System.out.println("Its 2");
+        }
+        double currentMI = getMIatLoc(i,j,total,count) + getMIatLoc(k,l,total,count);
         grid.set(i, j, t2);
         grid.set(k, l, t);
-        double newMI = getMIatLoc(i,j,meank) + getMIatLoc(k,l,meank);
+        double newMI = getMIatLoc(i,j,total,count) + getMIatLoc(k,l,total,count);
         grid.set(i, j, t);
         grid.set(k, l, t2);
         return newMI - currentMI;
         
     }
     
-    public boolean isAdjacent(Swap changed, Swap checked){
+    public boolean isAdjacent(int x, int y, Swap checked){
         // Do it based on indices
-        return (changed.getI() == checked.getI() && Math.abs(changed.getJ() - checked.getJ()) == 1) ||
-        (changed.getJ() == checked.getJ() && Math.abs(changed.getI() - checked.getI()) == 1) ||
-        (changed.getK() == checked.getK() && Math.abs(changed.getL() - checked.getL()) == 1) ||
-        (changed.getL() == checked.getL() && Math.abs(changed.getK() - checked.getK()) == 1);
+        return (x == checked.getI() && Math.abs(y - checked.getJ()) == 1) ||
+        (y == checked.getJ() && Math.abs(x - checked.getI()) == 1) ||
+        (x == checked.getK() && Math.abs(y - checked.getL()) == 1) ||
+        (y == checked.getL() && Math.abs(x - checked.getK()) == 1);
     }
     
     public boolean hasOverlappingTiles(Swap a, Swap b){
@@ -311,17 +340,24 @@ public class SwapNearby {
         (a.getK() == b.getI() && a.getL() == b.getJ());
     }
     
-    public double getMIatLoc(int x, int y, double meank){
+    public double getMIatLoc(int x, int y, double total, int count){
         Tile t = grid.get(x, y);
         double res = 0;
-        if(x > 0)
-            res += (t.getData() - meank) * (grid.get(x-1, y).getData() - meank);
-        if(y > 0)
-            res += (t.getData() - meank) * (grid.get(x, y-1).getData() - meank);
-        if(x < grid.getColumns() - 1)
-            res += (t.getData() - meank) * (grid.get(x+1, y).getData() - meank);
-        if(y < grid.getRows() - 1)
-            res += (t.getData() - meank) * (grid.get(x, y+1).getData() - meank);
+        if(x > 0 && grid.get(x-1, y).getAssigned() != null)
+            res += (t.getData() * count - total) * (grid.get(x-1, y).getData() * count - total);
+        
+        if(y > 0 && grid.get(x, y-1).getAssigned() != null)
+            res += (t.getData() * count - total) * (grid.get(x, y-1).getData() * count - total);
+        
+        if(x < grid.getColumns() - 1 && grid.get(x+1, y).getAssigned() != null){
+            if(t.getAssigned() == null){
+                System.out.println("This is it");
+            }
+            res += (t.getData() * count - total) * (grid.get(x+1, y).getData() * count - total);
+        }
+        
+        if(y < grid.getRows() - 1 && grid.get(x, y+1).getAssigned() != null)
+            res += (t.getData() * count - total) * (grid.get(x, y+1).getData() * count - total);
         return res;
     }
 

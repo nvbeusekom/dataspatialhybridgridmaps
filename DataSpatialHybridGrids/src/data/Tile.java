@@ -62,9 +62,6 @@ public class Tile {
     }
     
     public double getData(){
-        if(assigned == null){
-            return -1;
-        }
         return assigned.getData();
     }
 

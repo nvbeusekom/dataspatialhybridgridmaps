@@ -29,7 +29,8 @@ public class Grid extends List2D<Tile> {
         double meank = 0;
         for (int i = 0; i < this.getColumns(); i++) {
             for (int j = 0; j < this.getRows(); j++) {
-                meank += this.get(i,j).getData();
+                if(this.get(i, j).getAssigned() != null)
+                    meank += this.get(i,j).getData();
             }
             
         }
@@ -37,26 +38,30 @@ public class Grid extends List2D<Tile> {
         double denom = 0;
         for (int j = 0; j < this.getColumns(); j++) {
             for (int i = 0; i < this.getRows(); i++) {
-                denom += Math.pow(this.get(j,i).getData() - meank/N, 2);
-                double innersum = 0;
-                for (int y = Math.max(0,j-1); y < Math.min(this.getColumns(),j+2); y++) {
-                    for (int x = Math.max(0,i-1); x < Math.min(this.getRows(),i+2); x++) {
-                        if(y != j || x != i){
-                            // Counting Diagonal Neighbours
-//                            if(i - x >= -1 && i - x <= 1 && y - j >= -1 && y - j <= 1){
-//                                innersum += (permuted[j][i] * N - meank) * (permuted[y][x] * N - meank);
-//                            }
-                            // Not Counting Diagonal Neighbours
-                            if(i - x >= -1 && i - x <= 1 && j == y){
-                                innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
-                            }
-                            if(i == x && j - y >= -1 && j - y <= 1){
-                                innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
+                if(this.get(j,i).getAssigned() != null){
+                    denom += Math.pow(this.get(j,i).getData() - meank/N, 2);
+                    double innersum = 0;
+                    for (int y = Math.max(0,j-1); y < Math.min(this.getColumns(),j+2); y++) {
+                        for (int x = Math.max(0,i-1); x < Math.min(this.getRows(),i+2); x++) {
+                            if(y != j || x != i){
+                                // Counting Diagonal Neighbours
+    //                            if(i - x >= -1 && i - x <= 1 && y - j >= -1 && y - j <= 1){
+    //                                innersum += (permuted[j][i] * N - meank) * (permuted[y][x] * N - meank);
+    //                            }
+                                // Not Counting Diagonal Neighbours
+                                if(this.get(y,x).getAssigned() != null){
+                                    if(i - x >= -1 && i - x <= 1 && j == y){
+                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
+                                    }
+                                    if(i == x && j - y >= -1 && j - y <= 1){
+                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
+                                    }
+                                }
                             }
                         }
                     }
+                    num += innersum;
                 }
-                num += innersum;
             }
         }
         if(num == 0 && denom == 0){

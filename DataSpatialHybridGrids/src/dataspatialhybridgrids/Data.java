@@ -102,6 +102,8 @@ public class Data {
                 }
                 Tile closest = null;
                 for(Tile t2 : grid) {
+                    if(t2.getAssigned() == null)
+                        continue;
                     if((closest == null && t2.getData() > t.getData()) || (!t.equals(t2) && t2.getData()>t.getData() && t.getCenter().distanceTo(t2.getCenter()) < t.getCenter().distanceTo(closest.getCenter())))
                         closest = t2;
                 }
