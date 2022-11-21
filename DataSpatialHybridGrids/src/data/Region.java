@@ -42,6 +42,9 @@ public class Region {
     }
 
     public Vector getPos() {
+        if(shape != null){
+            return shape.centroid();
+        }
         return pos;
     }
 

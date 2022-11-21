@@ -6,23 +6,24 @@ package data;
 
 import nl.tue.geometrycore.geometry.Vector;
 import nl.tue.geometrycore.geometry.linear.Polygon;
+import nl.tue.geometrycore.geometry.linear.Rectangle;
 
 /**
  *
  * @author wmeulema
  */
 public class Tile {
-    Polygon shape;
+    Rectangle shape;
     Vector center;
     Region assigned = null;
     double currentMI;
 
-    public Tile(Polygon shape, Vector center) {
+    public Tile(Rectangle shape, Vector center) {
         this.shape = shape;
         this.center = center;
     }
     
-    public Tile(Polygon shape, Vector center, Region assigned) {
+    public Tile(Rectangle shape, Vector center, Region assigned) {
         this.shape = shape;
         this.center = center;
         this.assigned = assigned;
@@ -38,11 +39,11 @@ public class Tile {
         this.assigned = assigned;
     }
 
-    public Polygon getShape() {
+    public Rectangle getShape() {
         return shape;
     }
 
-    public void setShape(Polygon shape) {
+    public void setShape(Rectangle shape) {
         this.shape = shape;
     }
 
@@ -74,7 +75,14 @@ public class Tile {
     }
     
     public double getLength(){
-        return this.getShape().edge(0).length();
+        return this.getShape().width();
+    }
+    
+    public boolean isAdjacent(Tile t2){
+        if(this == t2){
+            return false;
+        }
+        return this.getCenter().distanceTo(t2.getCenter()) < this.getLength() + 0.001;
     }
     
     @Override 

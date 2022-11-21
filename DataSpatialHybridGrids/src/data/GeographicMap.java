@@ -18,7 +18,8 @@ public class GeographicMap extends ArrayList<Region> {
     public Rectangle getBoundingBox() {
         Rectangle r = new Rectangle();
         for (Region reg : this) {
-            r.includeGeometry(reg.getShape());
+            if(reg.getShape()!= null)
+                r.includeGeometry(reg.getShape());
         }
         return r;
     }

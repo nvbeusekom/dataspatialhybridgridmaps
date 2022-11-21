@@ -14,9 +14,9 @@ import nl.tue.geometrycore.geometry.linear.Rectangle;
  */
 public class GridGenerator {
 
-    public static Grid generateSquareGrid(int cols, int rows, Rectangle rect) {
+    public static Grid generateSquareGrid(int cols, int rows, Rectangle rect, boolean adjacentMI) {
 
-        Grid grid = new Grid(cols, rows);
+        Grid grid = new Grid(cols, rows,adjacentMI);
         rect = rect.clone();
         rect.growToAspectRatio((double)cols/(double)rows);
         Rectangle cell = rect.clone();
@@ -29,7 +29,7 @@ public class GridGenerator {
                 Rectangle p = cell.clone();
                 p.translate(c * cell.width(), -r * cell.height());
                 
-                Tile t = new Tile(p.toPolygon(),p.center());
+                Tile t = new Tile(p,p.center());
                 grid.set(c, r, t);
                 
                 

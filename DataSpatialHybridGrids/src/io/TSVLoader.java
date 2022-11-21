@@ -39,22 +39,25 @@ public class TSVLoader {
             try {
                 Scanner sc = new Scanner(choose.getSelectedFile());
                 String[] categories = sc.nextLine().split("\t");
-                String labelID = (String)JOptionPane.showInputDialog(
-                    frame,
-                    "Pick the label identifier",
-                    "Customized Dialog",
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    categories,
-                    categories[0]);
-                String dataID = (String)JOptionPane.showInputDialog(
-                    frame,
-                    "Pick the data identifier",
-                    "Customized Dialog",
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    categories,
-                    categories[0]);
+//                String labelID = (String)JOptionPane.showInputDialog(
+//                    frame,
+//                    "Pick the label identifier",
+//                    "Customized Dialog",
+//                    JOptionPane.PLAIN_MESSAGE,
+//                    null,
+//                    categories,
+//                    categories[0]);
+//                String dataID = (String)JOptionPane.showInputDialog(
+//                    frame,
+//                    "Pick the data identifier",
+//                    "Customized Dialog",
+//                    JOptionPane.PLAIN_MESSAGE,
+//                    null,
+//                    categories,
+//                    categories[0]);
+                String labelID = "INSEE Dept. No.";
+                String dataID = "Legal population in 2013";
+                
                 int labelIndex = 0;
                 int dataIndex = 0;
                 for (int i = 0; i < categories.length; i++) {

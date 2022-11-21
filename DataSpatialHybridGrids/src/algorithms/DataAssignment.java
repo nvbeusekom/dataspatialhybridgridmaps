@@ -22,7 +22,7 @@ import java.util.List;
  * From: https://github.com/tue-alga/Gridmap
  */
 
-public class SpatialAssignment {
+public class DataAssignment {
     Grid grid;
     GeographicMap geoMap;
     
@@ -41,6 +41,11 @@ public class SpatialAssignment {
     //holds for each flow variable between a cell and a site, to which cite it maps
     HashMap<CLPVariable, Tile> cellMapping = new HashMap();
     
+    //holds for each flow variable between a cell and a site, to which site it maps
+    HashMap<CLPVariable, Region> siteMapping2 = new HashMap();
+    //holds for each flow variable between a cell and a site, to which cite it maps
+    HashMap<CLPVariable, Tile> cellMapping2 = new HashMap();
+    
     // holds for each tile the variable to the tiles around it
     HashMap<Tile, List<CLPVariable>> adjacencyVariables = new HashMap();
     
@@ -49,7 +54,7 @@ public class SpatialAssignment {
      *
      * @param component
      */
-    public SpatialAssignment(Grid grid, GeographicMap geoMap) {
+    public DataAssignment(Grid grid, GeographicMap geoMap) {
         this.grid = grid;
         this.geoMap = geoMap;
         setupLP();
@@ -88,28 +93,45 @@ public class SpatialAssignment {
      */
     private void createVariables(List<Region> sites, Grid gridCells) {
         //Each site can be assigned to a cell in the grid.
-        for (Region s : sites) {
-            for (Tile c : gridCells) {
+        for (int i = 0; i < grid.getColumns(); i++) {
+            for (int j = 0; j < grid.getRows(); j++) {
+                Tile t1 = grid.get(i,j);
+                if(i < grid.getColumns()-1){
+                    Tile t2 = grid.get(i+1, j);
+                    for (Region r1 : sites) {
+                        for (Region r2 : sites){
+                            if(!r1.equals(r2)){
+                                CLPVariable flow = model.addVariable();
+                                //flow between 0 and 1
+                                flow.bounds(0.0, 1.0);
+                                //name it and add it
+                                flow.name(r1.getLabel() + ";" + t1 + "-" + r2.getLabel() + ";" + t2);
+                                variables.add(flow);
 
-                CLPVariable flow = model.addVariable();
-                //flow between 0 and 1
-                flow.bounds(0.0, 1.0);
-                //name it and add it
-                flow.name(s.getLabel() + ";" + c);
-                variables.add(flow);
+                                //keep track of it
+                                List cVarList = cellVariables.getOrDefault(t1, new ArrayList());
+                                cVarList.add(flow);
+                                cellVariables.put(t1, cVarList);
 
-                //keep track of it
-                List cVarList = cellVariables.getOrDefault(c, new ArrayList());
-                cVarList.add(flow);
-                cellVariables.put(c, cVarList);
+                                List sVarList = siteVariables.getOrDefault(r1, new ArrayList());
+                                sVarList.add(flow);
+                                siteVariables.put(r1, sVarList);
 
-                List sVarList = siteVariables.getOrDefault(s, new ArrayList());
-                sVarList.add(flow);
-                siteVariables.put(s, sVarList);
-
-                siteMapping.put(flow, s);
-                cellMapping.put(flow, c);
+                                siteMapping.put(flow, r1);
+                                cellMapping.put(flow, t1);
+                                siteMapping.put(flow, r2);
+                                cellMapping.put(flow, t2);
+                                
+                            }
+                        }
+                    }
+                    
+                }
+                if(j < grid.getRows()-1){
+                    Tile t3 = grid.get(i, j+1);
+                }
             }
+            
         }
     }
     
@@ -171,6 +193,10 @@ public class SpatialAssignment {
             }
             model.addConstraint(lhs, CLPConstraint.TYPE.LEQ, 1);
         }
+    }
+    
+    public void adjacencyConstraints() {
+         // For each edge pair var t1r1 t2r2 make sure that t2r2 is the same in the 
     }
 
     /**

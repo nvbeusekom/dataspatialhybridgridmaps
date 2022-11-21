@@ -6,6 +6,7 @@
 package algorithms;
 
 import data.Grid;
+import data.Tile;
 
 /**
  *
@@ -13,4 +14,26 @@ import data.Grid;
  */
 public class PatchMover {
     Grid grid;
+
+    public PatchMover(Grid grid) {
+        this.grid = grid;
+    }
+    
+    
+    public void movePatch(Pair[] init, Pair[] target){
+        // Add to spatial assignment
+        // Set some of the solution variables
+        System.out.println("not implemented");
+    }
+    
+    public class Pair {
+        int x;
+        int y;
+
+        public Pair(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+        
+    }
 }

@@ -22,9 +22,11 @@ import java.util.List;
  * From: https://github.com/tue-alga/Gridmap
  */
 
-public class SpatialAssignment {
+public class DataSpatialAssignment {
     Grid grid;
     GeographicMap geoMap;
+    double dataFactor;
+    double dataAvg;
     
     CLP model;
 
@@ -40,18 +42,16 @@ public class SpatialAssignment {
     HashMap<CLPVariable, Region> siteMapping = new HashMap();
     //holds for each flow variable between a cell and a site, to which cite it maps
     HashMap<CLPVariable, Tile> cellMapping = new HashMap();
-    
-    // holds for each tile the variable to the tiles around it
-    HashMap<Tile, List<CLPVariable>> adjacencyVariables = new HashMap();
-    
+
     /**
      * Sets up a linear program for the given component.
      *
      * @param component
      */
-    public SpatialAssignment(Grid grid, GeographicMap geoMap) {
+    public DataSpatialAssignment(Grid grid, GeographicMap geoMap, double dataFactor) {
         this.grid = grid;
         this.geoMap = geoMap;
+        this.dataFactor = dataFactor;
         setupLP();
     }
 
@@ -59,6 +59,11 @@ public class SpatialAssignment {
      * Initializes all the variables
      */
     private void setupLP() {
+        for (Region r : geoMap) {
+            dataAvg += r.getData();
+        }
+        dataAvg = dataAvg / geoMap.size();
+        
         model = new CLP();
         createVariables(geoMap, grid);
         addSiteConstraint();
@@ -111,6 +116,7 @@ public class SpatialAssignment {
                 cellMapping.put(flow, c);
             }
         }
+        // TODO Create extra adjacency variables.. minimize the difference...
     }
     
     // TODO Do it so that the cells and region in the patch are not assigned, then do them by hand..... ------------------------------------------------------
@@ -185,31 +191,22 @@ public class SpatialAssignment {
 
             //cell can be a square or hexagon, need to calculate the squaredDistance
             double squaredDistance = c.getCenter().squaredDistanceTo(site.getPos());
-
+            double diff = 0;
+            for(Tile t1 : grid){
+                if(t1.isAdjacent(c)){
+                    for(CLPVariable v1 : cellVariables.get(t1)){
+                        // It would just do all regions, so it is random... instead... it should have variables 
+                        // Minimize over all adjacency variables... the difference in data
+                    }
+                }
+            }
+            
             objective.put(v, squaredDistance);
         }
 
         //minimize the sum of squared distances
         model.addObjective(objective, 0.0);
     }
-    
-    private void addOptimization1() {
-        //cost for a site s to be assigned to cell c is the squared squaredDistance between their centroids.
-        HashMap<CLPVariable, Double> objective = new HashMap<>();
-        for (CLPVariable v : variables) {
-            Region site = getSite(v);
-            Tile c = getCell(v);
-
-            //cell can be a square or hexagon, need to calculate the squaredDistance
-            double squaredDistance = c.getCenter().squaredDistanceTo(site.getPos());
-
-            objective.put(v, squaredDistance);
-        }
-
-        //minimize the sum of squared distances
-        model.addObjective(objective, 0.0);
-    }
-    
 
     /**
      * Solve the linear program and return the cost.
@@ -218,6 +215,12 @@ public class SpatialAssignment {
      */
     public double solveLP() {
         model.minimize();
+        for(Tile t : grid){
+            t.setAssigned(null);
+        }
+        for(Region r : geoMap){
+            r.setAssigned(null);
+        }
         for (CLPVariable v : variables) {
             if (model.getSolution(v) == 1) {
                 //there is a mapping from the site to the cell.

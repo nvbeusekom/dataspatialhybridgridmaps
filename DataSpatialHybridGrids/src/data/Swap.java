@@ -13,7 +13,6 @@ import nl.tue.geometrycore.datastructures.priorityqueue.BasicIndexable;
  */
 public class Swap extends BasicIndexable{
     double miGain;
-    int index;
     int i;
     int j;
     int k;
@@ -22,7 +21,6 @@ public class Swap extends BasicIndexable{
 
     public Swap(double miGain, int i, int j, int k, int l) {
         this.miGain = miGain;
-        this.index = index;
         // Was t1 before
         this.i = i;
         this.j = j;
@@ -53,6 +51,10 @@ public class Swap extends BasicIndexable{
 
     public int getL() {
         return l;
+    }
+    
+    public int computeHash(int maxDimension){
+        return i + maxDimension * j + (int)Math.pow(maxDimension,2) * k + (int)Math.pow(maxDimension,3) * l;
     }
     
 }
