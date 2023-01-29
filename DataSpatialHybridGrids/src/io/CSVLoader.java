@@ -29,21 +29,21 @@ import nl.tue.geometrycore.io.ipe.IPEReader;
  *
  * @author 20184261
  */
-public class TSVLoader {
-    public static void loadTSV(GeographicMap map, JFrame frame, boolean loadForLowerLevel,boolean loadFrance){
+public class CSVLoader {
+    public static void loadCSV(GeographicMap map, JFrame frame, boolean loadForLowerLevel){
         if(map == null)
             return;
         File file = null;
-        if(loadFrance){
-            file = new File("..\\data\\francedepwiki.tsv");
+        if(!loadForLowerLevel){
+            file = new File("..\\data\\regionData.csv");
         }
         else{
-            file = new File("..\\data\\gem_2017.tsv");
+            file = new File("..\\data\\LALowerTierData.csv");
         }
 
         try {
             Scanner sc = new Scanner(file);
-            String[] categories = sc.nextLine().split("\t");
+            String[] categories = sc.nextLine().split(",");
 //                String labelID = (String)JOptionPane.showInputDialog(
 //                    frame,
 //                    "Pick the label identifier",
@@ -60,17 +60,8 @@ public class TSVLoader {
 //                    null,
 //                    categories,
 //                    categories[0]);
-
-            String labelID;
-            String dataID;
-            if(loadFrance){
-                labelID = "INSEE Dept. No.";
-                dataID = "Legal population in 2013";
-            }else{
-                labelID = "GM_CODE";
-                dataID = "AANT_INW";
-            }
-            
+            String labelID = "label";
+            String dataID = "pop";
 
             int labelIndex = 0;
             int dataIndex = 0;
@@ -83,7 +74,7 @@ public class TSVLoader {
                 }
             }
             while (sc.hasNextLine()) {
-                String[] data = sc.nextLine().split("\t");
+                String[] data = sc.nextLine().split(",");
                 for(Region r : map){
                     if(loadForLowerLevel){
                         for(Region r2 : r.getLocalMap()){
@@ -103,30 +94,6 @@ public class TSVLoader {
         } catch (IOException ex) {
             Logger.getLogger(IPEImport.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-    
-    public static void loadColors(GeographicMap map){
-        if(map == null)
-            return;
-        int result = choose.showOpenDialog(null);
-        if (result == JFileChooser.APPROVE_OPTION) {
 
-            try {
-                Scanner sc = new Scanner(choose.getSelectedFile());
-                while (sc.hasNextLine()) {
-                    String[] data = sc.nextLine().split("\t");
-                    Color c = ExtendedColors.fromUnitRGB(Double.parseDouble(data[3])/255, Double.parseDouble(data[4])/255, Double.parseDouble(data[5])/255);
-                    for(Region r : map){
-                        if(r.getLabel().equals(data[0])){
-                            r.setSpatialColor(c);
-                        }
-                    }
-                }
-
-            } catch (IOException ex) {
-                Logger.getLogger(IPEImport.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-        }
     }
 }

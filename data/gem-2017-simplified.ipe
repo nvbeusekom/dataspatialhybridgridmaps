@@ -1,71 +1,63 @@
 <?xml version="1.0"?>
 <!DOCTYPE ipe SYSTEM "ipe.dtd">
-<ipe version="70212" creator="Ipe 7.2.12">
-<info created="D:20100909134504" modified="D:20200723145853"/>
+<ipe version="70218" creator="Ipe 7.2.24">
+<info created="D:20100909134504" modified="D:20230110173537"/>
 <ipestyle name="GeometryCoreExport">
-<pen name="normal" value="0.4"/>
-<pen name="fat" value="1.2"/>
-<pen name="heavier" value="0.8"/>
-<pen name="ultrafat" value="2"/>
-<symbolsize name="normal" value="3"/>
-<symbolsize name="large" value="5"/>
-<symbolsize name="small" value="2"/>
-<symbolsize name="tiny" value="1.1"/>
-<color name="black" value="0"/>
-<color name="white" value="1"/>
-<color name="pink" value="1 0.752 0.792"/>
-<color name="navy" value="0 0 0.501"/>
-<color name="darkgreen" value="0 0.388 0"/>
-<color name="yellow" value="1 1 0"/>
-<color name="turquoise" value="0.25 0.874 0.815"/>
-<color name="CB light green" value="0.698 0.874 0.541"/>
+<color name="CB dark blue" value="0.121 0.47 0.705"/>
+<color name="CB dark green" value="0.2 0.627 0.172"/>
+<color name="CB dark orange" value="1 0.498 0"/>
+<color name="CB dark purple" value="0.415 0.239 0.603"/>
 <color name="CB dark red" value="0.89 0.101 0.109"/>
+<color name="CB light blue" value="0.65 0.807 0.89"/>
+<color name="CB light green" value="0.698 0.874 0.541"/>
+<color name="CB light orange" value="0.992 0.749 0.435"/>
 <color name="CB light purple" value="0.792 0.698 0.839"/>
-<color name="red" value="1 0 0"/>
+<color name="CB light red" value="0.984 0.603 0.6"/>
+<color name="black" value="0"/>
+<color name="blue" value="0 0 1"/>
+<color name="brown" value="0.643 0.164 0.164"/>
+<color name="darkblue" value="0 0 0.541"/>
+<color name="darkcyan" value="0 0.541 0.541"/>
+<color name="darkgray" value="0.662"/>
+<color name="darkgreen" value="0 0.388 0"/>
+<color name="darkmagenta" value="0.541 0 0.541"/>
+<color name="darkorange" value="1 0.545 0"/>
+<color name="darkred" value="0.541 0 0"/>
 <color name="gold" value="1 0.839 0"/>
 <color name="gray" value="0.741"/>
-<color name="darkcyan" value="0 0.541 0.541"/>
+<color name="green" value="0 1 0"/>
 <color name="lightblue" value="0.674 0.843 0.901"/>
-<color name="darkgray" value="0.662"/>
-<color name="darkorange" value="1 0.545 0"/>
-<color name="darkmagenta" value="0.541 0 0.541"/>
-<color name="CB light orange" value="0.992 0.749 0.435"/>
-<color name="darkblue" value="0 0 0.541"/>
 <color name="lightcyan" value="0.874 1 1"/>
 <color name="lightgray" value="0.823"/>
-<color name="green" value="0 1 0"/>
-<color name="lightyellow" value="1 1 0.874"/>
-<color name="violet" value="0.929 0.509 0.929"/>
-<color name="brown" value="0.643 0.164 0.164"/>
 <color name="lightgreen" value="0.564 0.929 0.564"/>
-<color name="CB light red" value="0.984 0.603 0.6"/>
+<color name="lightyellow" value="1 1 0.874"/>
+<color name="navy" value="0 0 0.501"/>
 <color name="orange" value="1 0.643 0"/>
-<color name="CB dark purple" value="0.415 0.239 0.603"/>
-<color name="CB dark green" value="0.2 0.627 0.172"/>
-<color name="blue" value="0 0 1"/>
-<color name="darkred" value="0.541 0 0"/>
-<color name="seagreen" value="0.176 0.541 0.337"/>
+<color name="pink" value="1 0.752 0.792"/>
 <color name="purple" value="0.623 0.121 0.937"/>
-<color name="CB dark orange" value="1 0.498 0"/>
-<color name="CB light blue" value="0.65 0.807 0.89"/>
-<color name="CB dark blue" value="0.121 0.47 0.705"/>
-<dashstyle name="dashed" value="[4.0] 0"/>
-<dashstyle name="W dot heavier" value="[0.01 1.6] 0"/>
-<dashstyle name="W dot fat" value="[0.01 2.4] 0"/>
-<dashstyle name="W dot normal" value="[0.01 0.8] 0"/>
-<dashstyle name="dash dot dotted" value="[4.0 2.0 1.0 2.0 1.0 2.0] 0"/>
-<dashstyle name="W dashed normal" value="[1.0 1.7] 0"/>
-<dashstyle name="W dashed heavier" value="[2.0 3.0] 0"/>
-<dashstyle name="W dashed ultrafat" value="[5.0 8.5] 0"/>
-<dashstyle name="dash dotted" value="[4.0 2.0 1.0 2.0] 0"/>
-<dashstyle name="W dot ultrafat" value="[0.01 4.0] 0"/>
-<dashstyle name="dotted" value="[1.0 3.0] 0"/>
+<color name="red" value="1 0 0"/>
+<color name="seagreen" value="0.176 0.541 0.337"/>
+<color name="turquoise" value="0.25 0.874 0.815"/>
+<color name="violet" value="0.929 0.509 0.929"/>
+<color name="white" value="1"/>
+<color name="yellow" value="1 1 0"/>
 <dashstyle name="W dashed fat" value="[3.0 5.1] 0"/>
-<opacity name="opaque" value="1"/>
-<opacity name="25%" value="0.25"/>
-<opacity name="100%" value="1"/>
+<dashstyle name="W dashed heavier" value="[2.0 3.0] 0"/>
+<dashstyle name="W dashed normal" value="[1.0 1.7] 0"/>
+<dashstyle name="W dashed ultrafat" value="[5.0 8.5] 0"/>
+<dashstyle name="W dot fat" value="[0.01 2.4] 0"/>
+<dashstyle name="W dot heavier" value="[0.01 1.6] 0"/>
+<dashstyle name="W dot normal" value="[0.01 0.8] 0"/>
+<dashstyle name="W dot ultrafat" value="[0.01 4.0] 0"/>
+<dashstyle name="dash dot dotted" value="[4.0 2.0 1.0 2.0 1.0 2.0] 0"/>
+<dashstyle name="dash dotted" value="[4.0 2.0 1.0 2.0] 0"/>
+<dashstyle name="dashed" value="[4.0] 0"/>
+<dashstyle name="dotted" value="[1.0 3.0] 0"/>
+<gridsize name="1 pts" value="1"/>
 <opacity name="10%" value="0.1"/>
+<opacity name="100%" value="1"/>
 <opacity name="20%" value="0.2"/>
+<opacity name="25%" value="0.25"/>
 <opacity name="30%" value="0.3"/>
 <opacity name="40%" value="0.4"/>
 <opacity name="50%" value="0.5"/>
@@ -73,6 +65,15 @@
 <opacity name="70%" value="0.75"/>
 <opacity name="80%" value="0.8"/>
 <opacity name="90%" value="0.9"/>
+<opacity name="opaque" value="1"/>
+<pen name="fat" value="1.2"/>
+<pen name="heavier" value="0.8"/>
+<pen name="normal" value="0.4"/>
+<pen name="ultrafat" value="2"/>
+<symbolsize name="large" value="5"/>
+<symbolsize name="normal" value="3"/>
+<symbolsize name="small" value="2"/>
+<symbolsize name="tiny" value="1.1"/>
 <layout paper="595 842" origin="0 0" frame="595 842"/>
 </ipestyle>
 <page>
@@ -182,7 +183,7 @@
 <text matrix="0.198378 0 0 0.197485 518.711 377.791" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0294</text>
 <text matrix="0.198378 0 0 0.197485 366.125 339.244" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0296</text>
 <text matrix="0.198378 0 0 0.197485 284.754 333.318" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0297</text>
-<text matrix="0.198378 0 0 0.197485 423.177 373.982" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0299</text>
+<text matrix="0.198378 0 0 0.197485 422.177 378.982" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0299</text>
 <text matrix="0.198378 0 0 0.197485 444.865 416.721" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0301</text>
 <text matrix="0.198378 0 0 0.197485 378.108 464.872" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0302</text>
 <text matrix="0.198378 0 0 0.197485 365.342 504.017" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0303</text>
@@ -214,8 +215,8 @@
 <text matrix="0.198378 0 0 0.197485 249.774 517.531" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0370</text>
 <text matrix="0.198378 0 0 0.197485 213.769 543.096" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0373</text>
 <text matrix="0.198378 0 0 0.197485 210.894 500.148" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0375</text>
-<text matrix="0.198378 0 0 0.197485 299.893 450.329" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0376</text>
-<text matrix="0.198378 0 0 0.197485 201.673 475.662" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0377</text>
+<text matrix="0.198378 0 0 0.197485 297.893 450.329" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0376</text>
+<text matrix="0.198378 0 0 0.197485 200.673 480.662" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0377</text>
 <text matrix="0.198378 0 0 0.197485 215.341 517.639" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0383</text>
 <text matrix="0.198378 0 0 0.197485 259.776 464.264" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0384</text>
 <text matrix="0.198378 0 0 0.197485 264.776 513.52" pos="0 0" stroke="black" type="label" width="31.334" height="5.446" depth="0" halign="center" valign="center" size="8">GM0385</text>

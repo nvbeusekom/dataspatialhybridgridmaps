@@ -5,6 +5,7 @@
 package data;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import nl.tue.geometrycore.geometry.Vector;
 import nl.tue.geometrycore.geometry.linear.Polygon;
 
@@ -15,13 +16,15 @@ import nl.tue.geometrycore.geometry.linear.Polygon;
 public class Region {
 
     String label;
-    Vector pos;
-    Polygon shape;
+    Vector pos = null;
+    ArrayList<Polygon> shapes = new ArrayList();
     Tile assigned = null;
     int initRow;
     int initCol;
     double data;
     Color spatialColor = null;
+    GeographicMap map = null;
+    Region parent = null;
     
     public Tile getAssigned() {
         return assigned;
@@ -42,8 +45,14 @@ public class Region {
     }
 
     public Vector getPos() {
-        if(shape != null){
-            return shape.centroid();
+        if(pos == null && shapes.size() > 0){
+            Polygon largest = null;
+            for(Polygon p : this.shapes){
+                if(largest == null || p.areaUnsigned() > largest.areaUnsigned()){
+                    largest = p;
+                }
+            }
+            this.pos = largest.centroid();
         }
         return pos;
     }
@@ -52,12 +61,16 @@ public class Region {
         this.pos = pos;
     }
 
-    public Polygon getShape() {
-        return shape;
+    public ArrayList<Polygon> getShape() {
+        return shapes;
     }
 
     public void setShape(Polygon shape) {
-        this.shape = shape;
+        this.shapes.add(shape);
+    }
+    
+    public void removeLastShape() {
+        this.shapes.remove(this.shapes.size()-1);
     }
     
     public void setData(double data){
@@ -90,6 +103,39 @@ public class Region {
 
     public Color getSpatialColor() {
         return spatialColor;
+    }
+    public void addRegion(Region r){
+        if(map == null){
+            map = new GeographicMap();
+        }
+        r.setParent(this);
+        map.add(r);
+    }
+    public GeographicMap getLocalMap(){
+        return this.map;
+    
+    }
+
+    public Region getParent() {
+        return parent;
+    }
+
+    public void setParent(Region parent) {
+        this.parent = parent;
+    }
+    
+    public Region clone(){
+        Region c = new Region();
+        c.setAssigned(assigned);
+        c.setData(data);
+        c.setInitCol(initCol);
+        c.setInitRow(initRow);
+        c.setPos(pos.clone());
+        for(Polygon p : shapes){
+            c.setShape(p.clone());
+        }
+        c.setSpatialColor(spatialColor);
+        return c;
     }
 
 }

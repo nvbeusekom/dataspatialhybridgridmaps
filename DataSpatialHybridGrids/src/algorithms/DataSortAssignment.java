@@ -31,23 +31,19 @@ public class DataSortAssignment {
         }
         regions.sort(new DataSort());
         
-        for (Region r : regions) {
-            System.out.println(r.getLabel());
-        }
-        
         int regIndex = 0;
         int diagCount = 0;
         int i,j = 0;
         while(diagCount < (grid.getColumns() + grid.getRows())-1 ){
-            if(diagCount < grid.getRows()){
+            if(diagCount < grid.getColumns()){
                 i = diagCount;
                 j = 0;
             }
             else{// todo figure out exacts
                 i = grid.getColumns() - 1;
-                j = (diagCount - grid.getRows()) + 1;
+                j = (diagCount - grid.getColumns()) + 1;
             }
-            while(j < grid.getRows() && i >= 0){
+            while(j < grid.getRows() && i >= 0 && i < grid.getColumns() && j >= 0){
                 if(grid.get(i, j).getAssigned() != null){
                     grid.get(i, j).setAssigned(regions.get(regIndex));
                     regIndex++;
@@ -58,9 +54,6 @@ public class DataSortAssignment {
             diagCount++;
             
         }
-        System.out.println(grid.get(0, 0).getLabel());
-        System.out.println(grid.get(1, 1).getLabel());
-        System.out.println(grid.get(2, 2).getLabel());
         
     }
     

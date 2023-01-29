@@ -5,6 +5,7 @@
 package data;
 
 import java.util.ArrayList;
+import nl.tue.geometrycore.geometry.Vector;
 import nl.tue.geometrycore.geometry.linear.Rectangle;
 
 /**
@@ -27,9 +28,20 @@ public class GeographicMap extends ArrayList<Region> {
     public double getMaxData(){
         if(maxData == 0){
             double max = Double.MIN_VALUE;
-            for(Region r : this){
-                if(r.getData() > max){
-                    max = r.getData();
+            if(this.get(0).getLocalMap() == null){
+                for(Region r : this){
+                    if(r.getData() > max){
+                        max = r.getData();
+                    }
+                }
+            }
+            else{
+                for(Region r : this){
+                    for(Region r2: r.getLocalMap()){
+                        if(r2.getData() > max){
+                            max = r2.getData();
+                        }
+                    }
                 }
             }
             maxData = max;
@@ -37,4 +49,8 @@ public class GeographicMap extends ArrayList<Region> {
         return maxData;
     }
 
+    public Vector centroid(){
+        return null;
+    }
+    
 }

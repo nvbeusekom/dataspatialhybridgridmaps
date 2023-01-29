@@ -6,6 +6,8 @@ package io;
 
 import data.GeographicMap;
 import data.Region;
+import static io.GeoJSONReader.addRegion;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
@@ -33,56 +35,72 @@ public class IPEImport {
 
     static JFileChooser choose = new JFileChooser("../data");
 
-    public static GeographicMap readIPE() {
-        int result = choose.showOpenDialog(null);
-        if (result == JFileChooser.APPROVE_OPTION) {
+    public static GeographicMap readIPE(boolean loadFrance,boolean loadHierarchical) {
+        return readIPE(null,loadFrance,loadHierarchical);
+    }
+    
+    public static GeographicMap readIPE(GeographicMap upperMap,boolean loadFrance,boolean loadHierarchical) {
+        File file = null;
+        if(upperMap == null && loadHierarchical){
+            file = new File("..\\data\\provinces_labeled.ipe");
+        }
+        else if(loadFrance){
+            file = new File("..\\data\\france_departements.ipe");
+        }
+        else{
+            file = new File("..\\data\\gem-2017-simplified.ipe");
+        }
+        try {
+            IPEReader read = IPEReader.fileReader(file);
+            read.setBezierSampling(2);
+            List<ReadItem> items = read.read();
 
-            try {
-                IPEReader read = IPEReader.fileReader(choose.getSelectedFile());
-                read.setBezierSampling(2);
-                List<ReadItem> items = read.read();
-
-                GeographicMap map = new GeographicMap();
-                int count = 0;
-                for (ReadItem it : items) {
-                    if (it.getString() != null) {
-                        Region r = new Region();
-                        r.setLabel(it.getString());
+            GeographicMap map = new GeographicMap();
+            int count = 0;
+            for (ReadItem it : items) {
+                if (it.getString() != null) {
+                    Region r = new Region();
+                    r.setLabel(it.getString());
 //                        System.out.println("Region " + count);
-                        count++;
-                        r.setPos((Vector) it.getGeometry());
-                        map.add(r); 
-                        for(ReadItem it2 : items){
-                            if(findShape(r, it2.getGeometry())){
+                    count++;
+                    r.setPos((Vector) it.getGeometry());
+                    map.add(r);
+                    if(upperMap!=null){
+                        addRegion(r,upperMap);
+                    }
+                    for(ReadItem it2 : items){
+                        if(findShape(r, it2.getGeometry())){
 //                                System.out.println("Found shape :)");
-                                break;
-                            }
+                            break;
                         }
                     }
                 }
+            }
 //                for(Region r : map){
 //                    if(r != null && r.getShape() == null){
 //                        System.out.println(r.getLabel());
 //                    }
 //                }
 
-                return map;
+            return map;
 
-            } catch (IOException ex) {
-                Logger.getLogger(IPEImport.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
+        } catch (IOException ex) {
+            Logger.getLogger(IPEImport.class.getName()).log(Level.SEVERE, null, ex);
         }
+
         return null;
 
     }
     
     public static boolean findShape(Region r, BaseGeometry geom){
-        boolean found = false;
+        return findShape(r,geom,false);
+    }
+    
+    public static boolean findShape(Region r, BaseGeometry geom, boolean force){
 //        System.out.println(geom.getGeometryType());
         if (geom.getGeometryType() == GeometryType.POLYGON) {
             Polygon p = (Polygon) geom;
-            if (p.contains(r.getPos())) {
+            if (p.contains(r.getPos()) || force) {
                 r.setShape(p);
                 return true;
             }
@@ -95,27 +113,23 @@ public class IPEImport {
             for(Vector v : ((PolyLine) geom).vertices()){
                 p.addVertex(v);
             }
-            findShape(r,p);
+            return findShape(r,p,force);
         }
         else if(geom.getGeometryType() == GeometryType.GEOMETRYGROUP){
-//            System.out.println("In group: ------------------------");
+            boolean inGroup = false;
             for(BaseGeometry geom2 : ((GeometryGroup<? extends BaseGeometry>)geom).getParts()){
-//                System.out.println(geom2.getGeometryType());
-                if(geom2.getGeometryType() == GeometryType.GEOMETRYGROUP){
-                    if(findShape(r,geom2)){
-                        return true;
-                    }
+
+                if(findShape(r,geom2)){
+                    inGroup = true;
                 }
-                else if(geom2.getGeometryType() == GeometryType.GEOMETRYCYCLE){
-                    if(findShape(r,geom2)){
-                        return true;
-                    }
+            }
+            // Add all other shapes in the group except the one already added
+            if(inGroup){
+                r.removeLastShape();
+                for(BaseGeometry geom2 : ((GeometryGroup<? extends BaseGeometry>)geom).getParts()){
+                    findShape(r,geom2,true);
                 }
-                else if(geom2.getGeometryType() == GeometryType.POLYGON){
-                    if(findShape(r,geom2)){
-                        return true;
-                    }
-                }
+                return true;
             }
         }
         else if(geom.getGeometryType() == GeometryType.GEOMETRYCYCLE){
@@ -144,9 +158,9 @@ public class IPEImport {
                     }
                 }
             }
-            return findShape(r,p);
+            return findShape(r,p,force);
         }
-        return found;
+        return false;
         
     }
         

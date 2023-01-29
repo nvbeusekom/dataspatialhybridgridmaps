@@ -41,13 +41,11 @@ public class SpatialAssignment {
     //holds for each flow variable between a cell and a site, to which cite it maps
     HashMap<CLPVariable, Tile> cellMapping = new HashMap();
     
-    // holds for each tile the variable to the tiles around it
-    HashMap<Tile, List<CLPVariable>> adjacencyVariables = new HashMap();
-    
     /**
      * Sets up a linear program for the given component.
      *
-     * @param component
+     * @param grid
+     * @param geoMap
      */
     public SpatialAssignment(Grid grid, GeographicMap geoMap) {
         this.grid = grid;
@@ -61,20 +59,6 @@ public class SpatialAssignment {
     private void setupLP() {
         model = new CLP();
         createVariables(geoMap, grid);
-        addSiteConstraint();
-        addCellConstraint();
-        addOptimization();
-    }
-    
-    private void setupMovementLP(List<Tile> patch) {
-        model = new CLP();
-        variables = new ArrayList();
-        siteVariables = new HashMap();
-        cellVariables = new HashMap();
-        siteMapping = new HashMap();
-        cellMapping = new HashMap();
-        
-//        createMovementVariables(patch, grid);
         addSiteConstraint();
         addCellConstraint();
         addOptimization();
@@ -113,38 +97,6 @@ public class SpatialAssignment {
         }
     }
     
-    // TODO Do it so that the cells and region in the patch are not assigned, then do them by hand..... ------------------------------------------------------
-    private void createMovementVariables(List<Pair> patch, Grid gridCells) {
-        currentAssignment = new HashMap<>();
-        //Each site can be assigned to a cell in the grid.
-        for (Tile t : gridCells) {
-            if(t.getAssigned() != null){
-                for (Tile c : gridCells) {
-
-                    CLPVariable flow = model.addVariable();
-                    //flow between 0 and 1
-                    flow.bounds(0.0, 1.0);
-                    //name it and add it
-                    flow.name(t.getLabel() + ";" + c);
-                    variables.add(flow);
-
-                    //keep track of it
-                    List cVarList = cellVariables.getOrDefault(c, new ArrayList());
-                    cVarList.add(flow);
-                    cellVariables.put(c, cVarList);
-
-                    List sVarList = siteVariables.getOrDefault(t.getAssigned(), new ArrayList());
-                    sVarList.add(flow);
-                    siteVariables.put(t.getAssigned(), sVarList);
-
-                    siteMapping.put(flow, t.getAssigned());
-                    cellMapping.put(flow, c);
-                    currentAssignment.put(t.getAssigned(), c);
-                }
-            }
-        }
-    }
-
     /**
      * Creates the constraint that every site maps to exactly 1 cell.
      */
@@ -192,25 +144,6 @@ public class SpatialAssignment {
         //minimize the sum of squared distances
         model.addObjective(objective, 0.0);
     }
-    
-    private void addOptimization1() {
-        //cost for a site s to be assigned to cell c is the squared squaredDistance between their centroids.
-        HashMap<CLPVariable, Double> objective = new HashMap<>();
-        for (CLPVariable v : variables) {
-            Region site = getSite(v);
-            Tile c = getCell(v);
-
-            //cell can be a square or hexagon, need to calculate the squaredDistance
-            double squaredDistance = c.getCenter().squaredDistanceTo(site.getPos());
-
-            objective.put(v, squaredDistance);
-        }
-
-        //minimize the sum of squared distances
-        model.addObjective(objective, 0.0);
-    }
-    
-
     /**
      * Solve the linear program and return the cost.
      *
@@ -218,8 +151,9 @@ public class SpatialAssignment {
      */
     public double solveLP() {
         model.minimize();
+        double epsilon = 0.00001;
         for (CLPVariable v : variables) {
-            if (model.getSolution(v) == 1) {
+            if (Math.abs(model.getSolution(v) - 1) < epsilon) {
                 //there is a mapping from the site to the cell.
                 Region site = getSite(v);
                 Tile cell = getCell(v);
@@ -229,8 +163,9 @@ public class SpatialAssignment {
 //                cell.color = site.color;
 //                cell.province = site.province;
 
-            } else if (model.getSolution(v) > 0) {
-                System.out.println("Non-integer solutions");
+            } else if (model.getSolution(v) > epsilon) {
+                System.out.println("Non-integer solutions:");
+                System.out.println(model.getSolution(v));
             }
         }
         return model.getObjectiveValue();

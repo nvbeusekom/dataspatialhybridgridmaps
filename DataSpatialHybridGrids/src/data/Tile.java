@@ -17,6 +17,7 @@ public class Tile {
     Vector center;
     Region assigned = null;
     double currentMI;
+    Grid localGrid = null;
 
     public Tile(Rectangle shape, Vector center) {
         this.shape = shape;
