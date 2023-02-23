@@ -14,6 +14,7 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import nl.tue.geometrycore.geometry.Vector;
 import nl.tue.geometrycore.geometry.curved.BezierCurve;
 import nl.tue.geometrycore.geometry.curved.Circle;
@@ -42,7 +43,7 @@ public class DrawPanel extends GeometryPanel {
     boolean drawExtras = true;
     boolean drawLabels = false;
     boolean drawTears = false;
-    double strokeSize = 1;
+    double strokeSize = 0.4;
     boolean drawOverlay = false;
     boolean drawHigherBorders = true;
     
@@ -81,11 +82,11 @@ public class DrawPanel extends GeometryPanel {
         if (grid != null) {
             double diagonalDistance = grid.get(0, 0).getCenter().distanceTo(grid.get(grid.getColumns()-1, grid.getRows()-1).getCenter());
             
-            setStroke(ExtendedColors.darkBlue, 1, Dashing.SOLID);
+            setStroke(ExtendedColors.darkBlue, strokeSize, Dashing.SOLID);
             int count = 0;
             for (Tile tile : grid) {
                 if(tile.getAssigned()==null) {
-                    setStroke(ExtendedColors.darkBlue, 1, Dashing.SOLID);
+                    setStroke(ExtendedColors.darkBlue, strokeSize, Dashing.SOLID);
                     setFill(null,Hashures.SOLID);
                 }
                 else {
@@ -104,7 +105,7 @@ public class DrawPanel extends GeometryPanel {
                         c = tile.getAssigned().getSpatialColor();
 //                        c = tile.getAssigned().getParent().getSpatialColor();
                     }
-                    setStroke(c, 1, Dashing.SOLID);
+                    setStroke(c, strokeSize, Dashing.SOLID);
                     setFill(c,Hashures.SOLID);
                     
                 }
@@ -113,14 +114,14 @@ public class DrawPanel extends GeometryPanel {
                 
                 draw(tile.getShape());
                 if(data.gridlabels && drawLabels){
-                    setStroke(ExtendedColors.black,1,Dashing.SOLID);
+                    setStroke(ExtendedColors.black,strokeSize,Dashing.SOLID);
                     draw(tile.getCenter(), tile.getLabel());
                 }
                 setFill(null,Hashures.SOLID);
             }
             // Drawing the shaded overlay map
             if(drawOverlay){
-                setStroke(ExtendedColors.lightGreen,1,Dashing.SOLID);
+                setStroke(ExtendedColors.lightGreen,strokeSize,Dashing.SOLID);
                 setFill(ExtendedColors.black,Hashures.SOLID);
                 setAlpha(0.5);
                 for (Region reg : data.map) {
@@ -218,6 +219,7 @@ public class DrawPanel extends GeometryPanel {
                             double d = tile.getData()/data.map.getMaxData();
                             if(d > 0){
     //                            System.out.println(d);
+                                d = Math.sqrt(d);
                                 double size = tile.getLength()*d * 0.9;
     //                            Rectangle r = Circle.byCenterAndSize(tile.getCenter(),size,size);
                                 Circle r = new Circle(tile.getCenter(),size/2);
@@ -230,7 +232,7 @@ public class DrawPanel extends GeometryPanel {
                     }
                 }
             }
-            setStroke(ExtendedColors.lightGray,strokeSize,Dashing.SOLID);
+            setStroke(ExtendedColors.lightGray,0.4,Dashing.SOLID);
             setLayer("grid");
             setAlpha(1);
             
@@ -302,7 +304,15 @@ public class DrawPanel extends GeometryPanel {
                 } 
             }
             setStroke(ExtendedColors.black,20,Dashing.SOLID);
-            draw(Vector.add(grid.getBoundingBox().center(),Vector.down(grid.getBoundingBox().height()/2 + 100)),String.format("$I = %.2f$", grid.getMoransI()));
+            this.setTextStyle(TextAnchor.TOP_LEFT, 11);
+            Rectangle box = grid.getBoundingBox();
+            Vector labelLoc = box.leftBottom().clone();
+            
+            labelLoc.translate(Vector.down(50));
+            draw(labelLoc,String.format(Locale.US,"$S = %.3f$", grid.getSpatialDistortion()));
+            this.setTextStyle(TextAnchor.TOP_RIGHT, 11);
+            labelLoc.translate(Vector.right(box.width()));
+            draw(labelLoc,String.format(Locale.US,"$D = %.3f$", grid.getMoransI()));
         }
 
     }
@@ -315,7 +325,13 @@ public class DrawPanel extends GeometryPanel {
         }
         Rectangle r = data.map.getBoundingBox();
         r.include(Vector.add(r.center(),Vector.down(r.height()/2 + 200)));
-        r.scale(1, 2,r.leftTop());
+        if(data.innerGrid== null){
+            r.grow(data.map.getBoundingBox().width()*1.1, 0, 0, 0);
+        }
+        else{
+            r.grow(0, data.map.getBoundingBox().width(), 0, 0);
+            r.includeGeometry(data.innerGrid.getBoundingBox());
+        }
         return r;
 
     }

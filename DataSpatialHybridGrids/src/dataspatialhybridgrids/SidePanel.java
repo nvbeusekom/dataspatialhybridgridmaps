@@ -44,19 +44,20 @@ public class SidePanel extends TabbedSidePanel {
         SideTab tab = addTab("Regular");
         tab.addButton("Open France map and data", (e) -> {data.loadIPEMap(true);data.loadTSV(false,true);});
         tab.addButton("Open NL map and data", (e) -> {data.loadIPEMap(false);data.loadTSV(false,false);});
-        tab.addButton("Open GeoJSON map", (e) -> data.loadGeoJSONMap());
+        tab.addButton("Open UK map and data", (e) -> {data.loadGeoJSONMap();data.loadCSV(false);});
         String[] options = {"NL","UK","US"};
         coloring = tab.addRadioButtonList(options, "NL", (a,s) -> data.loadColors(s));
         
 
         tab.makeSplit(2, 2);
-        JSpinner spinColsOuter = tab.addIntegerSpinner(10, 1, Integer.MAX_VALUE, 1, null);
-        JSpinner spinRowsOuter = tab.addIntegerSpinner(10, 1, Integer.MAX_VALUE, 1, null);
+        JSpinner spinColsOuter = tab.addIntegerSpinner(18, 1, Integer.MAX_VALUE, 1, null);
+        JSpinner spinRowsOuter = tab.addIntegerSpinner(19, 1, Integer.MAX_VALUE, 1, null);
 
         tab.addButton("Create grid", (e) -> data.createGrid((int) spinColsOuter.getValue(), (int) spinRowsOuter.getValue()));
         
         tab.addButton("Assign to grid (spatial)", (e) -> data.assignToGridSpatial());
         tab.addButton("Assign to grid (data-sorted)", (e) -> data.assignToGridData());
+        tab.addButton("Random Simulated Annealing", (e) -> data.randomSimAn());
         
         tab.addButton("Save to Ipe", (e) -> data.saveIPE());
         
@@ -68,19 +69,22 @@ public class SidePanel extends TabbedSidePanel {
         tab.addButton("Post process spatial", (e) -> data.improveSpatial((int)spinRange.getValue()));
         tab.addButton("Compute (with selectedMI) - StackOverflows..", (e) -> data.randomimproveMI((int)spinRange.getValue()));
         tab.makeSplit(2, 1);
+        tab.addButton("Save", (e) -> data.saveGrid());
+        tab.addButton("Load", (e) -> data.loadGrid());
+        tab.makeSplit(2, 1);
         tab.addCheckbox("Color by data", false, (a,b) -> data.setDataColored(b));
         tab.addCheckbox("Draw extras", true, (a,b) -> data.setDrawExtras(b));
         tab.addCheckbox("Show labels", false, (a,b) -> data.setDrawLabels(b));
         tab.addCheckbox("Show Map Tears", false, (a,b) -> data.setDrawTears(b));
         tab.addCheckbox("Adjacent Moran's I", true, (a,b) -> data.setAdjacentMI(b));
         tab.addLabel("Stroke size");
-        tab.addDoubleSpinner(1,0,Double.MAX_VALUE,1, (a,b) -> data.setStrokeSize(b));
+        tab.addDoubleSpinner(0.4,0,Double.MAX_VALUE,0.1, (a,b) -> data.setStrokeSize(b));
         tab.makeSplit(2,1);
         tab.addLabel("Tear distance");
         tab.addDoubleSpinner(2,0,Double.MAX_VALUE,1, (a,b) -> data.setTearCells(b));
         tab.makeSplit(2,1);
-        tab.addLabel("Data <-> Spatial");
-        tab.addDoubleSpinner(0,0,1,0.1, (a,b) -> data.setDataSpatial(b));
+        tab.addLabel("Spatial slack");
+        tab.addDoubleSpinner(0.01,0,40,0.01, (a,b) -> data.setSpatialSlack(b));
         tab.makeSplit(2,1);
         labeli = tab.addLabel("Morans I: 0");
         labeli.setSize(this.getSize().width,labeli.getSize().height);
@@ -97,7 +101,7 @@ public class SidePanel extends TabbedSidePanel {
     
     private void makeHierarchTab() {
         SideTab tab = addTab("Hierarchical");
-        tab.addButton("Do all UK", (e) -> {data.loadHierarchicalGeoJSON(); data.createGrid(3,4);data.createInnerGrid(19,19);data.hierarch_SpatialSpatial();data.loadColors("UK");});
+        tab.addButton("Do all UK", (e) -> {data.loadHierarchicalGeoJSON(); data.createGrid(3,4);data.createInnerGrid(18,19);data.hierarch_SpatialSpatial();data.loadColors("UK");});
         tab.addButton("Open UK", (e) -> data.loadHierarchicalGeoJSON());
         
         tab.addButton("Do all NL", (e) -> {data.loadHierarchicalIPE();data.createGrid(3,4);data.createInnerGrid(17,23);data.hierarch_SpatialSpatial();data.loadColors("UK");});
@@ -130,10 +134,10 @@ public class SidePanel extends TabbedSidePanel {
         tab.makeSplit(2,2);
         tab.addLabel("Higher Range");
 //        JSlider rangeSlider = tab.addIntegerSlider(0, 0, 20,null);
-        JSpinner spinRange = tab.addIntegerSpinner(2, 0, 100, 1, null);
+        JSpinner spinRange = tab.addIntegerSpinner(10, 0, 100, 1, null);
         tab.addLabel("Lower Range");
 //        JSlider rangeSlider = tab.addIntegerSlider(0, 0, 20,null);
-        JSpinner lowSpinRange = tab.addIntegerSpinner(4, 0, 100, 1, null);
+        JSpinner lowSpinRange = tab.addIntegerSpinner(10, 0, 100, 1, null);
         tab.addButton("Compute (efficient)", (e) -> data.improveMI((int)spinRange.getValue()));
         
         tab.makeSplit(2, 2);

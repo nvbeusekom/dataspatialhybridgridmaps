@@ -7,6 +7,7 @@ package algorithms;
 
 import data.GeographicMap;
 import data.Grid;
+import data.Region;
 import data.Swap;
 import data.Tile;
 import dataspatialhybridgrids.DrawPanel;
@@ -15,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,13 +34,20 @@ public class SwapNearby {
     Grid initGrid;
     Grid grid = null;
     int range = Integer.MAX_VALUE;
+
+    public void setRange(int range) {
+        this.range = range;
+    }
     boolean improvingSpace = false;
     double miUsed = 0;
-    double miMaxUse = 0.01; // 0.01, 0.05, 0.1 0.15, 0.20 0.25 0.5
+    double miMaxUse = 0.01; // 0.01, 0.05, 0.1 0.15, 0.20 0.25 0.3 0.5
     double miSacrificePerUse = miMaxUse;
+    double similarity = 0.01;
     
 
-    public SwapNearby(GeographicMap map, Grid initGrid) {
+    
+    public SwapNearby(GeographicMap map, Grid initGrid, double spatialSlack) {
+        this.similarity = spatialSlack;
         this.map = map;
         setInitGrid(initGrid);
     }
@@ -48,6 +57,7 @@ public class SwapNearby {
         miUsed = 0;
     }
     
+    // Terrible
     public double randomSwap(int range, DrawPanel draw){
         if(range < this.range || true){
             this.range = range;
@@ -110,6 +120,143 @@ public class SwapNearby {
         return oldMI;
     }
     
+    // Good
+    public void simAn(double startT, double endT, int maxIterations){
+        // INSTRUCTION: Uncomment this for the range implementation
+//        if(range == 0){
+//            return;
+//        }
+        if(this.improvingSpace){
+            range = Math.max(grid.getColumns(), grid.getRows());
+//            range = 1;
+        }
+        double initialMI = grid.getMoransI();
+        double initialS = grid.getSpatialDistortion2();
+        int maxDimension = Math.max(grid.getColumns(), grid.getRows());
+        range = Math.min(range, maxDimension);
+        double total = 0;
+        int count = 0;
+        for (int i = 0; i < grid.getColumns(); i++) {
+            for (int j = 0; j < grid.getRows(); j++) {
+                if(grid.get(i,j).getAssigned() != null){
+                    total += grid.get(i,j).getData();
+                    count++;
+                }
+            }
+            
+        }
+        System.out.println("Similarity: " + this.similarity);
+        double slack = similarity * total / map.size();
+        double fac = Math.pow(endT / startT, 1.0/maxIterations);
+        double T = startT;
+        Random rand = new Random();
+        double curCost = this.improvingSpace? grid.getSpatialDistortion2() : grid.getMoransI();
+        double bestCost = curCost;
+        Grid bestSolution = grid.clone();
+        for (int iter = 0; iter < maxIterations; iter++) {
+            
+            // INSTRUCTION: For the range implementation
+//            Swap s = this.improvingSpace? getRandomSwap(rand) : getRandomSwap(rand,this.range);
+            // INSTRUCTION: For the S deviation implementation (takes the similarity as the that it may increase S)
+            Swap s = getRandomSwap(rand);
+            Tile t1 = grid.get(s.getI(), s.getJ());
+            Tile t2 = grid.get(s.getK(), s.getL());
+             
+            // Do swap
+            Region r1 = t1.getAssigned();
+            t1.setAssigned(t2.getAssigned());
+            t2.setAssigned(r1);
+            
+            double newCost = this.improvingSpace? grid.getSpatialDistortion2() : grid.getMoransI();
+            double prob = this.improvingSpace? Math.min(1.0, Math.exp((newCost - curCost)/T)) : Math.min(1.0, Math.exp((curCost - newCost)/T));
+            // INSTRUCTION: Remove last or clause when using range implementation
+            if (Math.random() >= prob || (this.improvingSpace && initialMI - grid.getMoransI() > similarity) || (!this.improvingSpace && grid.getSpatialDistortion() - initialS > similarity)) {
+                //Undo swap
+                t2.setAssigned(t1.getAssigned());
+                t1.setAssigned(r1);
+            }
+            else { 
+                curCost = newCost;
+            }
+            boolean better = this.improvingSpace ? curCost < bestCost : bestCost < curCost;
+            if(better){
+                bestCost = curCost;
+                bestSolution = grid.clone();
+            }
+            T *= fac;
+
+            if (iter%10000 == 0) System.out.println(curCost);
+            
+        }
+        grid = bestSolution;
+        System.out.println("Final answer");
+        System.out.println(bestCost);
+    }
+    
+    public Swap getRandomSwap(Random rand){
+        int i = rand.nextInt(grid.getColumns());
+        int j = rand.nextInt(grid.getRows());
+        int k = rand.nextInt(grid.getColumns());
+        int l = rand.nextInt(grid.getRows());
+        while(grid.get(i, j).getAssigned() == null){
+            i = rand.nextInt(grid.getColumns());
+            j = rand.nextInt(grid.getRows());
+        }
+        while(grid.get(k, l).getAssigned() == null || (i == k && j == l)){
+            k = rand.nextInt(grid.getColumns());
+            l = rand.nextInt(grid.getRows());
+        }
+        return new Swap(0,i,j,k,l);
+    }
+    
+    public Swap getRandomSwap(Random rand, double slack){
+        int i = rand.nextInt(grid.getColumns());
+        int j = rand.nextInt(grid.getRows());
+        int k = rand.nextInt(grid.getColumns());
+        int l = rand.nextInt(grid.getRows());
+        while(grid.get(i, j).getAssigned() == null){
+            i = rand.nextInt(grid.getColumns());
+            j = rand.nextInt(grid.getRows());
+        }
+        while(grid.get(k, l).getAssigned() == null || (i == k && j == l)){
+            k = rand.nextInt(grid.getColumns());
+            l = rand.nextInt(grid.getRows());
+        }
+        if(Math.abs(grid.get(i, j).getData() - grid.get(k, l).getData()) > slack){
+            return getRandomSwap(rand,slack);
+        }
+        return new Swap(0,i,j,k,l);
+    }
+    
+    public Swap getRandomSwap(Random rand, int range){
+        int i = rand.nextInt(grid.getColumns());
+        int j = rand.nextInt(grid.getRows());
+        
+        while(grid.get(i, j).getAssigned() == null){
+            i = rand.nextInt(grid.getColumns());
+            j = rand.nextInt(grid.getRows());
+        }
+        Region r = grid.get(i, j).getAssigned();
+        int initCol = r.getInitCol();
+        int initRow = r.getInitRow();
+        
+        //Effective range
+        int lowerColBound = Math.max(initCol - range, 0);
+        int lowerRowBound = Math.max(initRow - range, 0);
+        int colRange = Math.min(initCol + range, grid.getColumns() - 1) - lowerColBound;
+        int rowRange = Math.min(initRow + range, grid.getRows() - 1) - lowerRowBound;
+        
+        int k = rand.nextInt(colRange);
+        int l = rand.nextInt(rowRange);
+        k += lowerColBound;
+        l += lowerRowBound;
+        if(grid.get(k, l).getAssigned() == null || (i == k && j == l) || Math.abs(grid.get(k, l).getAssigned().getInitCol() - i) > range || Math.abs(grid.get(k, l).getAssigned().getInitRow() - j) > range){
+            return getRandomSwap(rand,range);
+        }
+        return new Swap(0,i,j,k,l);
+    }
+    
+    // Local search
     public void betterSwap(int range, double dataSpatial){
         if(range < this.range){
             this.range = range;
@@ -117,6 +264,7 @@ public class SwapNearby {
         }
         if(this.improvingSpace){
             range = Math.max(grid.getColumns(), grid.getRows());
+//            range = 1;
         }
         int maxDimension = Math.max(grid.getColumns(), grid.getRows());
         range = Math.min(range, maxDimension);
@@ -137,39 +285,7 @@ public class SwapNearby {
         // Initialize Queue
         for (int i = 0; i < grid.getColumns(); i++) {
             for (int j = 0; j < grid.getRows(); j++) {
-                Tile t = grid.get(i,j);
-                if(t.getAssigned() != null){
-                    int initCol = t.getAssigned().getInitCol();
-                    int initRow = t.getAssigned().getInitRow();
-                    // Search the range for swaps
-//                    for (int k = 0; k < grid.getColumns(); k++) {
-//                        for (int l = 0; l < grid.getRows(); l++) {
-                    for (int k = Integer.max(initCol-range,0); k <= Integer.min(initCol+range,grid.getColumns()-1); k++){
-                        // Note that L and One use the same symbol...
-                        for (int l = Integer.max(initRow-range,0); l <= Integer.min(initRow+range,grid.getRows()-1); l++){
-                            // Check if the swapping candidate is null or also within swapping range
-                            Tile t2 = grid.get(k, l);
-                            if(t2.getAssigned() == null)
-                                continue;
-                            // Make sure every swap is added once
-                            if (k >= i && l >= j){
-//                                if ((t.getAssigned() == null || t.getAssigned().getPos().distanceTo(t2.getCenter()) <= range) &&
-//                                        (t2.getAssigned() == null || t2.getAssigned().getPos().distanceTo(t.getCenter()) <= range)) {
-                                if (Math.abs(i-t2.getAssigned().getInitCol()) <= range && Math.abs(j-t2.getAssigned().getInitRow())<= range){
-                                    // Compute all MI values and add the swaps to the priority queue
-                                    double gain = getSwapGain(i,j,k,l,total,count,dataSpatial);
-                                    // Only add beneficial swaps
-                                    if(gain > 0){
-                                        Swap swap = new Swap(gain,i,j,k,l);
-                                        q.add(swap);
-                                        inQueue.add(swap.computeHash(maxDimension));
-                                    }
-                                    
-                                }
-                            }
-                        }
-                    }
-                }
+                addPossibleSwaps(q,inQueue,i,j,range,total,count);
             }
         }
         
@@ -183,6 +299,11 @@ public class SwapNearby {
             double oldmi = 0;
             double newmi = 0;
             if(improvingSpace){
+//                System.out.println(s.toString());
+                if(getSpatialFromSwap(s.getI(),s.getJ(),s.getK(),s.getL()) < 0){
+                    System.out.println("This is a shit swap");
+                    continue;
+                }
                 oldmi = grid.getMoransI();
             }
             Tile t1 = grid.get(s.getI(), s.getJ());
@@ -195,10 +316,10 @@ public class SwapNearby {
             t2.setCenter(temp2);
             grid.set(s.getK(), s.getL(), t1);
             grid.set(s.getI(), s.getJ(), t2);
-            if(improvingSpace){
+            if(false && improvingSpace){
                 newmi = grid.getMoransI();
                 miUsed += (oldmi-newmi);
-                if(miUsed > miMaxUse){ //undo swap and stop
+                if(miUsed > miMaxUse || s.getMiGain() < 0){ //undo swap and stop
                     grid.set(s.getI(), s.getJ(), t1);
                     grid.set(s.getK(), s.getL(), t2);
                     break;
@@ -216,8 +337,6 @@ public class SwapNearby {
 //                System.out.println(s.getMiGain());
 //            }
             // Add new ones around T1 and T2
-            boolean[][] aroundT1 = {{true,true,true},{true,true,true},{true,true,true}};
-            boolean[][] aroundT2 = {{true,true,true},{true,true,true},{true,true,true}};
             List<Swap> swaplist = new ArrayList(q.extractContents());
             for(Swap swap : swaplist){
                 if(swap == null)
@@ -226,9 +345,9 @@ public class SwapNearby {
                     q.remove(swap);
                     inQueue.remove(swap.computeHash(maxDimension));
                 }
-                else if(isAdjacent(s.getK(),s.getL(),swap) || isAdjacent(s.getI(),s.getJ(),swap)){
-                    double gain = getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),total,count,dataSpatial);
-                    if(gain > 0) {
+                else if(true || isAdjacent(s.getK(),s.getL(),swap) || isAdjacent(s.getI(),s.getJ(),swap)){
+                    double gain = getSwapGain(swap.getI(),swap.getJ(),swap.getK(),swap.getL(),total,count);
+                    if(false && gain > 0) {
                         swap.setMiGain(gain);
                         q.priorityChanged(swap);
                     }
@@ -240,88 +359,167 @@ public class SwapNearby {
                 }
             }
             // Add new possibilies
+            for (int i = 0; i < grid.getColumns(); i++) {
+                for (int j = 0; j < grid.getRows(); j++) {
+                    addPossibleSwaps(q,inQueue,i,j,range,total,count);
+                }
+            }
             for (int a = -1; a <= 1 ; a++) {
                 for (int b = -1; b <= 1 ; b++) {
-                    for (int i = -range*2; i <= range*2; i++) {
-                        for (int j = -range*2; j <= range*2; j++) {
-                            if(!(i == 0 && j == 0)){
-                                // Do T1
-                                int tx = s.getK() + a;
-                                int ty = s.getL() + b;
-                                if(tx < 0 || ty  < 0 || tx >= grid.getColumns() || ty >= grid.getRows()){
-                                    continue;
-                                }
-                                Tile test1 = grid.get(tx, ty);
-                                if(test1.getAssigned() == null)
-                                    continue;
-                                int cx = tx + i;
-                                int cy = ty + j;
-                                // Check if in bounds
-                                if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
-                                    continue;
-                                }
-                                Tile candidate = grid.get(cx, cy);
-                                if(candidate.getAssigned() == null)
-                                    continue;
-                                if((Math.abs(cx-test1.getAssigned().getInitCol()) <= range && Math.abs(cy-test1.getAssigned().getInitRow())<= range) &&
-                                        (Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
-                                    double gain = getSwapGain(tx,ty,cx,cy,total,count,dataSpatial);
-                                    if(gain > 0){
-                                        Swap newswap = new Swap(gain,tx,ty,cx,cy);
-                                        if(!inQueue.contains(newswap.computeHash(maxDimension))){
-                                            q.add(newswap);
-                                            inQueue.add(newswap.computeHash(maxDimension));
-                                        }
-                                    }
-                                }
-                                // Do T2
-                                tx = s.getI() + a;
-                                ty = s.getJ() + b;
-                                if(tx < 0 || ty  < 0 || tx >= grid.getColumns() || ty >= grid.getRows()){
-                                    continue;
-                                }
-                                Tile test2 = grid.get(tx, ty);
-                                if(test2.getAssigned() == null)
-                                    continue;
-                                cx = tx + i;
-                                cy = ty + j;
-                                if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
-                                    continue;
-                                }
-                                candidate = grid.get(cx, cy);
-                                if(candidate.getAssigned() == null)
-                                    continue;
-                                if((test2.getAssigned() == null || Math.abs(cx-test2.getAssigned().getInitCol()) <= range && Math.abs(cy-test2.getAssigned().getInitRow())<= range) &&
-                                        (candidate.getAssigned() == null || Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
-                                    double gain = getSwapGain(tx,ty,cx,cy,total,count,dataSpatial);
-                                    if(gain > 0){
-                                        Swap newswap = new Swap(gain,tx,ty,cx,cy);
-                                        if(!inQueue.contains(newswap.computeHash(maxDimension))){
-                                            q.add(newswap);
-                                            inQueue.add(newswap.computeHash(maxDimension));
-                                        }
-                                    }
-                                }
+//                    if(a == 0 || b == 0){
+//                    addPossibleSwaps(q,inQueue,s.getI()+a,s.getJ()+b,range,total,count);
+//                    addPossibleSwaps(q,inQueue,s.getK()+a,s.getL()+b,range,total,count);}
+////                    for (int i = -range; i <= range; i++) {
+////                        for (int j = -range; j <= range; j++) {
+////                            if(a == 0 || b == 0){
+////                                // Do T1
+////                                int tx = s.getK() + a;
+////                                int ty = s.getL() + b;
+////                                if(tx < 0 || ty  < 0 || tx >= grid.getColumns() || ty >= grid.getRows()){
+////                                    continue;
+////                                }
+////                                Tile test1 = grid.get(tx, ty);
+////                                if(test1.getAssigned() == null)
+////                                    continue;
+////                                int cx = tx + i;
+////                                int cy = ty + j;
+////                                // Check if in bounds
+////                                if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
+////                                    continue;
+////                                }
+////                                Tile candidate = grid.get(cx, cy);
+////                                if(candidate.getAssigned() == null)
+////                                    continue;
+////                                if((Math.abs(cx-test1.getAssigned().getInitCol()) <= range && Math.abs(cy-test1.getAssigned().getInitRow())<= range) &&
+////                                        (Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
+////                                    double gain = getSwapGain(tx,ty,cx,cy,total,count);
+////                                    if(gain > 0){
+////                                        Swap newswap = new Swap(gain,tx,ty,cx,cy);
+////                                        if(!inQueue.contains(newswap.computeHash(maxDimension))){
+////                                            q.add(newswap);
+////                                            inQueue.add(newswap.computeHash(maxDimension));
+////                                        }
+////                                    }
+////                                }
+////                                // Do T2
+////                                tx = s.getI() + a;
+////                                ty = s.getJ() + b;
+////                                if(tx < 0 || ty  < 0 || tx >= grid.getColumns() || ty >= grid.getRows()){
+////                                    continue;
+////                                }
+////                                Tile test2 = grid.get(tx, ty);
+////                                if(test2.getAssigned() == null)
+////                                    continue;
+////                                cx = tx + i;
+////                                cy = ty + j;
+////                                if(cx < 0 || cy  < 0 || cx >= grid.getColumns() || cy >= grid.getRows()){
+////                                    continue;
+////                                }
+////                                candidate = grid.get(cx, cy);
+////                                if(candidate.getAssigned() == null)
+////                                    continue;
+////                                if((Math.abs(cx-test2.getAssigned().getInitCol()) <= range && Math.abs(cy-test2.getAssigned().getInitRow())<= range) &&
+////                                        (candidate.getAssigned() == null || Math.abs(tx-candidate.getAssigned().getInitCol()) <= range && Math.abs(ty-candidate.getAssigned().getInitRow())<= range)){
+////                                    double gain = getSwapGain(tx,ty,cx,cy,total,count);
+////                                    if(gain > 0){
+////                                        Swap newswap = new Swap(gain,tx,ty,cx,cy);
+////                                        if(!inQueue.contains(newswap.computeHash(maxDimension))){
+////                                            q.add(newswap);
+////                                            inQueue.add(newswap.computeHash(maxDimension));
+////                                        }
+////                                    }
+////                                }
+////                            }
+////                        }
+////                    }
+                }
+            }
+        }
+    }
+    
+    public void addPossibleSwaps(IndexedPriorityQueue<Swap> q, HashSet<Integer> inQueue, int i, int j, int range, double total,int count){
+        int maxDimension = Math.max(grid.getColumns(), grid.getRows());
+        if(i < 0 || i >= grid.getColumns() || j < 0 || j >= grid.getRows()){
+            return;
+        }
+        Tile t = grid.get(i,j);
+        if(t.getAssigned() != null){
+            int initCol = t.getAssigned().getInitCol();
+            int initRow = t.getAssigned().getInitRow();
+            // Search the range for swaps
+//                    for (int k = 0; k < grid.getColumns(); k++) {
+//                        for (int l = 0; l < grid.getRows(); l++) {
+            for (int k = Integer.max(initCol-range,0); k <= Integer.min(initCol+range,grid.getColumns()-1); k++){
+                // Note that L and One use the same symbol...
+                for (int l = Integer.max(initRow-range,0); l <= Integer.min(initRow+range,grid.getRows()-1); l++){
+                    // Check if the swapping candidate is null or also within swapping range
+                    Tile t2 = grid.get(k, l);
+                    if(t2.getAssigned() == null)
+                        continue;
+                    // Make sure every swap is added once
+                    if (k >= i && l >= j){
+//                                if ((t.getAssigned() == null || t.getAssigned().getPos().distanceTo(t2.getCenter()) <= range) &&
+//                                        (t2.getAssigned() == null || t2.getAssigned().getPos().distanceTo(t.getCenter()) <= range)) {
+                        if (Math.abs(i-t2.getAssigned().getInitCol()) <= range && Math.abs(j-t2.getAssigned().getInitRow())<= range){
+                            // Compute all MI values and add the swaps to the priority queue
+                            double gain = getSwapGain(i,j,k,l,total,count);
+                            // Only add beneficial swaps
+                            if(gain > 0){
+                                Swap swap = new Swap(gain,i,j,k,l);
+                                q.add(swap);
+                                inQueue.add(swap.computeHash(maxDimension));
                             }
+
                         }
                     }
                 }
             }
         }
-    }
+    } 
+    
     public boolean isSwap(Swap s, int i, int j , int k, int l){
         return (s.getI() == i && s.getJ() == j && s.getK() == k && s.getL() == l);
     }
-    public double getSwapGain(int i, int j, int k, int l, double total, int count, double dataSpatial){
+    
+    public boolean similarData(Tile t, Tile t2){
+        return Math.abs(t.getData() - t2.getData()) < (map.getAvgData()) * similarity;
+    }
+    
+    public double getSwapGain(int i, int j, int k, int l, double total, int count){
+        if(i == k && j == l){
+            return -1;
+        }
         Tile t = grid.get(i, j);
         Tile t2 = grid.get(k, l);
         
+        if(improvingSpace){
+            if(Math.abs(getSpatialFromSwap(i , j, k, l) - getSpatialFromSwap(k , l, i, j)) > 0.1){
+                System.out.println("Not symmetric:");
+                System.out.println(getSpatialFromSwap(i , j, k, l));
+                System.out.println(getSpatialFromSwap(k , l, i, j));
+                System.out.println(Math.abs(getSpatialFromSwap(i , j, k, l) - getSpatialFromSwap(k , l, i, j)));
+            }
+            if(getSpatialFromSwap(i, j, i, j) != 0){
+                System.out.println("Not reflexive");
+            }
+            // CHeck gain > 0 and data similar enough
+            if(similarData(t,t2)){
+                return getSpatialFromSwap(i , j, k, l);
+            }
+            else{
+                return -1;
+            }
+        }
+        
         double oldMIGRID = 0;
+        double oldS = 0;
         double newMIGRID = 0;
+        double newS = 0;
         
         double oldMI = getMIatLoc(i,j,total,count) + getMIatLoc(k,l,total,count);
         if(improvingSpace){
             oldMIGRID = grid.getMoransI();
+            oldS = grid.getSpatialDistortion();
         }
         
         ArrayList<Double> oldMISUM = sumLocMI(total,count);
@@ -330,6 +528,7 @@ public class SwapNearby {
         double newMI = getMIatLoc(i,j,total,count) + getMIatLoc(k,l,total,count);
         if(improvingSpace){
             newMIGRID = grid.getMoransI();
+            newS = grid.getSpatialDistortion();
         }
         
         ArrayList<Double> newMISUM = sumLocMI(total,count);
@@ -343,12 +542,20 @@ public class SwapNearby {
 //        if(improvingSpace && oldMIGRID - newMIGRID < miMaxUse - miUsed){
 //            return getSpatialFromSwap(i , j, k, l);
 //        }
-        if(improvingSpace && getSpatialFromSwap(i , j, k, l) > 0 && oldMIGRID - newMIGRID < miMaxUse - miUsed){
-            return getSpatialFromSwap(i , j, k, l);
+
+        if(!improvingSpace){
+            return newMI - oldMI;
         }
-        else if(improvingSpace){
-            return -1;
+        double gain = getSpatialFromSwap(i , j, k, l);
+//        double gain = oldS-newS;
+        if(gain > 0 && oldMIGRID - newMIGRID < miMaxUse - miUsed){
+            if(newS > oldS){
+//                System.out.println("Error code 489: Spatial assesment failure");
+                getSpatialFromSwap(i , j, k, l);
+            }
+            return gain;
         }
+        return -1;
 //        if(localBetter!=sumBetter){
 //            System.out.println("Swap Gain FAILED");
 //            for (int m = 0; m < oldMISUM.size(); m++) {
@@ -362,7 +569,7 @@ public class SwapNearby {
 //            System.out.println("What now?");
 //            
 //        }
-        return newMI - oldMI;
+        
 //        double miGain = (newMI - oldMI) / Math.abs(oldMI);
 //        double spGain = getSpatialFromSwap(i,j,k,l);
 ////        return miGain;
@@ -522,23 +729,41 @@ public class SwapNearby {
 //        return (post - pre) / Math.abs(pre);
         double currentDist = 0;
         double newDist = 0;
-        for (int m = Math.max(0, i-1); m <= Math.min(grid.getColumns()-1, i+1); m++) {
-            for (int n = Math.max(0, j-1); n <= Math.min(grid.getRows()-1, j+1); n++) {
-                if(grid.get(m, n).getAssigned()!=null && (m == i || n == j)){
-                    currentDist += Math.pow(t.getAssigned().getPos().distanceTo(grid.get(m, n).getAssigned().getPos()),2);
-                    newDist += Math.pow(t2.getAssigned().getPos().distanceTo(grid.get(m, n).getAssigned().getPos()),2);
-                }
-            }
-        }
-        for (int o = Math.max(0, k-1); o <= Math.min(grid.getColumns()-1, k+1); o++) {
-            for (int p = Math.max(0, l-1); p <= Math.min(grid.getRows()-1, l+1); p++) {
-                if(grid.get(o, p).getAssigned()!=null && (o == i || p == j)){
-                    currentDist += Math.pow(t2.getAssigned().getPos().distanceTo(grid.get(o, p).getAssigned().getPos()),2);
-                    newDist += Math.pow(t.getAssigned().getPos().distanceTo(grid.get(o, p).getAssigned().getPos()),2);
-                }
-            }
-        }
+        
+        currentDist = distancesAroundTiles(i,j,k,l);
+        
+        grid.set(i, j, t2);
+        grid.set(k, l, t);
+        
+        newDist = distancesAroundTiles(i,j,k,l);
+        
+        grid.set(i, j, t);
+        grid.set(k, l, t2);
+//        currentDist = currentDist / (grid.getBoundingBox().width() * 430);
+//        newDist = newDist / (grid.getBoundingBox().width() * 430);
         return currentDist-newDist;
+    }
+    
+    public double distancesAroundTiles(int i, int j, int k, int l){
+        double dists = 0;
+        for (int a = -1; a <= 1 ; a++) {
+                for (int b = -1; b <= 1 ; b++) {
+                    if(a == 0 || b == 0 || true){
+                        int x = i + a;
+                        int y = j + b;
+                        if(x >= 0 && x < grid.getColumns() && y >= 0 && y < grid.getRows() && grid.get(x, y).getAssigned() != null){
+                            dists += grid.adjacentSquaredDistances(x, y);
+        
+                        }
+                        x = k + a;
+                        y = l + b;
+                        if(x >= 0 && x < grid.getColumns() && y >= 0 && y < grid.getRows() && grid.get(x, y).getAssigned() != null){
+                            dists += grid.adjacentSquaredDistances(x, y);
+                        }
+                    }
+                }
+        }
+        return dists;
     }
             
     public Grid getInitGrid() {

@@ -16,6 +16,8 @@ public class GeographicMap extends ArrayList<Region> {
 
     double maxData = 0;
     
+    double avgData = 0;
+    
     public Rectangle getBoundingBox() {
         Rectangle r = new Rectangle();
         for (Region reg : this) {
@@ -49,6 +51,28 @@ public class GeographicMap extends ArrayList<Region> {
         return maxData;
     }
 
+    public double getAvgData(){
+        if(avgData == 0){
+            if(this.get(0).getLocalMap() == null){
+                for(Region r : this){
+                        avgData += r.getData();
+                }
+                avgData = avgData / this.size();
+            }
+            else{
+                double sizes =0;
+                for(Region r : this){
+                    sizes += r.getLocalMap().size();
+                    for(Region r2: r.getLocalMap()){
+                        avgData += r2.getData();
+                    }
+                }
+                avgData = avgData / sizes;
+            }
+        }
+        return avgData;
+    }
+    
     public Vector centroid(){
         return null;
     }

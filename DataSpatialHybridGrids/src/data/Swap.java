@@ -57,4 +57,9 @@ public class Swap extends BasicIndexable{
         return i + maxDimension * j + (int)Math.pow(maxDimension,2) * k + (int)Math.pow(maxDimension,3) * l;
     }
     
+    @Override
+    public String toString(){
+        return "Swap " + i + "," + j + " with " + k + "," + l;
+    }
+    
 }

@@ -21,6 +21,7 @@ import io.TSVLoader;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Scanner;
@@ -56,12 +57,18 @@ public class Data {
     
     int selectedx = -1;
     int selectedy = -1;
-    
+    Grid savedGrid = null;
     GeographicMap map = null;
     GeographicMap lowerMap = null;
     Grid grid = null;
     Grid innerGrid = null;
     static JFrame mainFrame;
+    
+    double spatialSlack = 0.01;
+
+    public void setSpatialSlack(double spatialSlack) {
+        this.spatialSlack = spatialSlack;
+    }
     
     /**
      * @param args the command line arguments
@@ -85,7 +92,7 @@ public class Data {
     }
     
     public void loadGeoJSONMap() {
-        GeographicMap map = GeoJSONReader.loadGeoJSON();
+        GeographicMap map = GeoJSONReader.loadGeoJSON(null,true);
         if (map != null) {
             this.map = map;
             this.grid = null;
@@ -176,10 +183,10 @@ public class Data {
     void writeIPE(IPEWriter write) throws IOException {
         Rectangle bbox = draw.getBoundingRectangle();
         bbox.grow(10);
-        write.setView(IPEWriter.getA4Size());
+        write.setView(new Rectangle(0,398,0,IPEWriter.getA4Size().getTop()));
         write.setWorldview(bbox);
         write.initialize("\\renewcommand\\familydefault{\\sfdefault}");
-
+        
         write.newPage("grid", "data", "boundaries");
         write.setTextSerifs(true);
         write.configureTextHandling(false, textsize, true);
@@ -209,6 +216,16 @@ public class Data {
         if(sn != null){
             sn.setInitGrid(grid);
         }
+        for (int i = 0; i < grid.getColumns(); i++) {
+            for (int j = 0; j < grid.getRows(); j++) {
+                if(grid.get(i, j).getAssigned() != null){
+                    grid.get(i, j).getAssigned().setSpatialCol(i);
+                    grid.get(i, j).getAssigned().setSpatialRow(j);
+                }
+                
+            }
+            
+        }
         side.setMoransI(grid.getMoransI());
         side.setGearysC(grid.getGearysC());
         side.setSpatialDistortion(grid.getSpatialDistortion());
@@ -227,6 +244,49 @@ public class Data {
         if(sn != null){
             sn.setInitGrid(grid);
         }
+        side.setMoransI(grid.getMoransI());
+        side.setGearysC(grid.getGearysC());
+        side.setSpatialDistortion(grid.getSpatialDistortion());
+        draw.repaint();
+        
+    }
+    
+    public void randomSimAn(){
+        assignToGridSpatial();
+        double bestMI = -1;
+        Grid bestGrid = null;
+        for (int i = 10000000; i <= 10000000; i+=10000000) {
+            for (double j = 0.01; j <= 0.01; j+=0.05) {
+                for (double k = 0.0001; k <= 0.0001; k+=0.0005) {
+                    for (int l = 0; l < 1; l++) {
+                        Collections.shuffle(map);
+                        int index = 0;
+                        for(Tile t: grid){
+                            if(t.getAssigned() != null){
+                                t.setAssigned(map.get(index));
+                                index++;
+                            }
+                        }
+                        int maxIterations = i;
+                        double startT = j / Math.log(0.5);
+                        double endT = k / Math.log(0.000000001);
+                        sn = new SwapNearby(map,grid,spatialSlack);
+                        System.out.println("Running j = " + j + ", k = " + k + ", i = " + i);
+                        sn.simAn(startT, endT, maxIterations);
+                        System.out.println("MI: " + sn.getGrid().getMoransI());
+                        if(sn.getGrid().getMoransI() > bestMI){
+                            bestMI = sn.getGrid().getMoransI();
+                            bestGrid = sn.getGrid().clone();
+                        }   
+                    }
+                }
+                
+            }
+        }
+        
+        selectedx = -1;
+        selectedy = -1;
+        this.grid = bestGrid;
         side.setMoransI(grid.getMoransI());
         side.setGearysC(grid.getGearysC());
         side.setSpatialDistortion(grid.getSpatialDistortion());
@@ -288,9 +348,10 @@ public class Data {
                             return;
                         }
                         if(sn == null){
-                            sn = new SwapNearby(map,grid);
+                            sn = new SwapNearby(map,grid,spatialSlack);
                         }
-                        System.out.println(sn.getSwapGain(i, j, selectedx, selectedy, grid.getTotal(), grid.getCount(), dataFactor));
+                        System.out.println(sn.getSwapGain(i, j, selectedx, selectedy, grid.getTotal(), grid.getCount()));
+                        System.out.println(grid.adjacentSquaredDistances(i, j));
                         return;
                     }
                 }
@@ -307,10 +368,13 @@ public class Data {
     }
     
     public Grid improveMI(int range, Grid grid, GeographicMap map){
-        if(sn == null){
-            sn = new SwapNearby(map,grid);
-        }
-        sn.betterSwap(range,dataFactor);
+        sn = new SwapNearby(map,grid,spatialSlack);
+//        sn.betterSwap(range,dataFactor);
+        int maxIterations = 3000000;
+        double startT = 0.01 / Math.log(0.5);
+        double endT = 0.0001 / Math.log(0.000000001);
+        sn.setRange(range);
+        sn.simAn(startT, endT, maxIterations);
         selectedx = -1;
         selectedy = -1;
 //        this.grid = sn.getGrid();
@@ -322,6 +386,8 @@ public class Data {
         this.grid = improveSpatial(range,grid,map);
         side.setMoransI(grid.getMoransI());
         side.setGearysC(grid.getGearysC());
+        System.out.println("S:");
+        System.out.println(grid.getSpatialDistortion());
         side.setSpatialDistortion(grid.getSpatialDistortion());
         draw.repaint();
     }
@@ -329,11 +395,14 @@ public class Data {
     public Grid improveSpatial(int range, Grid grid, GeographicMap map){
 //        if(sn == null){
 //            System.out.println("No SwapNearby instance!");
-//            sn = new SwapNearby(map,grid);
+//            sn = new SwapNearby(map,grid,spatialSlack);
 //        }
-        sn = new SwapNearby(map,grid);
+        sn = new SwapNearby(map,grid,spatialSlack);
         sn.setToSpatialGain();
-        sn.betterSwap(range,dataFactor);
+        int maxIterations = 3000000;
+        double startT = 1 / Math.log(0.5);
+        double endT = 0.01 / Math.log(0.000000001);
+        sn.simAn(startT, endT, maxIterations);
         selectedx = -1;
         selectedy = -1;
         return sn.getGrid();
@@ -342,7 +411,7 @@ public class Data {
     
     public void randomimproveMI(int range){
         if(sn == null){
-            sn = new SwapNearby(map,grid);
+            sn = new SwapNearby(map,grid,spatialSlack);
         }
         sn.randomSwap(range,draw);
         selectedx = -1;
@@ -367,6 +436,16 @@ public class Data {
     }
     public void setStrokeSize(double d){
         draw.strokeSize = d;
+        draw.repaint();
+    }
+    
+    public void saveGrid(){
+        this.savedGrid = this.grid.clone();
+    }
+    public void loadGrid(){
+        this.grid = this.savedGrid;
+        System.out.println("Sigma: " + spatialSlack);
+        sn = new SwapNearby(map,grid,spatialSlack);
         draw.repaint();
     }
 
@@ -414,6 +493,7 @@ public class Data {
     // High level Data
     // Low level Spatial
     public void hierarch_DataSpatial(int highRange){
+        this.spatialSlack = 100;
         assignToGridData();
         this.sn = null;
         improveMI(highRange);
@@ -423,6 +503,7 @@ public class Data {
     // High level Data
     // Low level Data
     public void hierarch_DataData(int highRange, int lowRange){
+        this.spatialSlack = 100;
         assignToGridData();
         this.sn = null;
         improveMI(highRange);
@@ -431,6 +512,7 @@ public class Data {
 
     
     public void lowLevelSpatial(){
+        this.spatialSlack = 100;
         GeographicMap alteredMap = new GeographicMap();
         HashMap<String,ArrayList> allPreservedCenters = new HashMap<>();
         for (Tile t : grid) {
@@ -443,8 +525,8 @@ public class Data {
                 ArrayList<Vector> preservedCenters = new ArrayList();
                 for (Region innerRegion : localMap) {
                     preservedCenters.add(innerRegion.getPos().clone());
-//                    Vector translation = Vector.divide(Vector.subtract(innerRegion.getPos(),localBox.center()),10/Math.min(t.getShape().height()/localBox.height(),t.getShape().width()/localBox.width()));//innerGrid.getColumns()+innerGrid.getRows());
-                    Vector translation = Vector.divide(Vector.subtract(innerRegion.getPos(),localBox.center()),innerGrid.getColumns()+innerGrid.getRows());
+                    Vector translation = Vector.divide(Vector.subtract(innerRegion.getPos(),localBox.center()),Math.max(localBox.height()/t.getShape().height(),localBox.width()/t.getShape().width())*1 );//innerGrid.getColumns()+innerGrid.getRows());
+//                    Vector translation = Vector.divide(Vector.subtract(innerRegion.getPos(),localBox.center()),innerGrid.getColumns()+innerGrid.getRows());
 //                    Vector newPos = Vector.add(r.getPos(), translation);
                     Vector newPos = Vector.add(t.getCenter(), translation);
 //                    Vector newPos = Vector.add(closerToCenter, translation);
@@ -470,6 +552,7 @@ public class Data {
     
     public void lowLevelData(int range){
         // Divide inner grid into copied grids based on high level
+        this.spatialSlack = 100;
         HashMap<String,Grid> smallGrids = new HashMap();
         for(Region r: this.map){
             Grid subGrid = GridGenerator.generateSquareGrid(innerGrid.getColumns(), innerGrid.getRows(), map.getBoundingBox(),adjacentMI);

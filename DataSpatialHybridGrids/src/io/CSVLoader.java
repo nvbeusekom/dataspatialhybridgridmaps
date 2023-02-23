@@ -34,7 +34,7 @@ public class CSVLoader {
         if(map == null)
             return;
         File file = null;
-        if(!loadForLowerLevel){
+        if(!loadForLowerLevel && false){
             file = new File("..\\data\\regionData.csv");
         }
         else{

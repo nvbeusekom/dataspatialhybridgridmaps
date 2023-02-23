@@ -21,7 +21,25 @@ public class Region {
     Tile assigned = null;
     int initRow;
     int initCol;
-    double data;
+    int spatialCol;
+    int spatialRow;
+
+    public int getSpatialCol() {
+        return spatialCol;
+    }
+
+    public int getSpatialRow() {
+        return spatialRow;
+    }
+
+    public void setSpatialCol(int spatialCol) {
+        this.spatialCol = spatialCol;
+    }
+
+    public void setSpatialRow(int spatialRow) {
+        this.spatialRow = spatialRow;
+    }
+    double data=0;
     Color spatialColor = null;
     GeographicMap map = null;
     Region parent = null;

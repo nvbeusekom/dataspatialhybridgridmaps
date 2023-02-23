@@ -4,6 +4,8 @@
  */
 package data;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import nl.tue.geometrycore.datastructures.list2d.List2D;
@@ -200,19 +202,114 @@ public class Grid extends List2D<Tile> {
 //    }
     
     public double getSpatialDistortion(){
-        double sum = 0;
-        double norm = this.get(0,0).getLength();
-        for(Tile t1 : this){
-            for(Tile t2 : this){
-                if(t1 != t2 && t1.getAssigned() != null && t2.getAssigned() != null){
-                    Vector tileDiff = Vector.subtract(t1.getCenter(), t2.getCenter());
-                    Vector regionDiff = Vector.subtract(t1.getAssigned().getPos(), t2.getAssigned().getPos());
-                    sum += Math.sqrt(Vector.subtract(tileDiff, regionDiff).length()/norm);
-                    
-                } 
+//        double sum = 0;
+//        double norm = this.get(0,0).getLength();
+//        for(Tile t1 : this){
+//            for(Tile t2 : this){
+//                if(t1 != t2 && t1.getAssigned() != null && t2.getAssigned() != null){
+//                    Vector tileDiff = Vector.subtract(t1.getCenter(), t2.getCenter());
+//                    Vector regionDiff = Vector.subtract(t1.getAssigned().getPos(), t2.getAssigned().getPos());
+//                    sum += Math.sqrt(Vector.subtract(tileDiff, regionDiff).length()/norm);
+//                    
+//                } 
+//            }
+//        }
+//        return sum / (this.getColumns()*this.getRows()*this.getColumns()*this.getRows());
+        double totalDist = 0;
+        double adjacencies = 0;
+        double regions = 0;
+        for (int i = 0; i < this.getColumns(); i++) {
+            for (int j = 0; j < this.getRows(); j++) {
+                Tile t = this.get(i,j);
+                if(t.getAssigned() != null){
+                    regions++;
+                    for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
+                        for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
+                            if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
+                                adjacencies++;
+                                totalDist += Math.pow(t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos()),1);
+                            }
+                        }
+                    }
+                }
+                
+            }
+            
+        }
+        totalDist = 100 * totalDist / (this.getBoundingBox().width()* adjacencies);
+//        totalDist = 100 * Math.sqrt(totalDist) / (this.getBoundingBox().width()* adjacencies);
+        return totalDist;
+    
+    }
+    public double getSpatialDistortion2(){
+        double totalDist = 0;
+        double adjacencies = 0;
+        double regions = 0;
+        for (int i = 0; i < this.getColumns(); i++) {
+            for (int j = 0; j < this.getRows(); j++) {
+                Tile t = this.get(i,j);
+                if(t.getAssigned() != null){
+                    regions++;
+                    for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
+                        for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
+                            if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
+                                adjacencies++;
+                                Vector v1 = Vector.subtract(t.getAssigned().getPos(),this.get(m, n).getAssigned().getPos());
+                                Vector v2 = Vector.subtract(t.getCenter(),this.get(m, n).getCenter());
+                                totalDist += v1.distanceTo(v2);
+                            }
+                        }
+                    }
+                }
+                
+            }
+            
+        }
+        totalDist = 100 * totalDist / (this.getBoundingBox().width()* adjacencies);
+//        totalDist = 100 * Math.sqrt(totalDist) / (this.getBoundingBox().width()* adjacencies);
+        return totalDist;
+    }
+    
+    public double adjacentSquaredDistances(int i, int j){
+////        double dist = Double.POSITIVE_INFINITY;
+//        Tile t = this.get(i, j);
+//        double dist = 0;
+//        ArrayList<Double> dists = new ArrayList<>();
+//        for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
+//            for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
+//                if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
+//                    dists.add(t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos()));
+////                    dist = Math.min(t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos()),dist);
+////                    dist += t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos());
+//                }
+//            }
+//        }
+//        Collections.sort(dists);
+//        for (int k = 0; k < dists.size(); k++) {
+//            dist += Math.pow(dists.get(k), 4-k);
+//            
+//        }
+////        dist = (4/dists.size()) * dist;
+//        return dist;
+        // Ring around tile, distance of original tiles
+        Tile t = this.get(i, j);
+        double dist = 0;
+        for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
+            for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
+                if(this.get(m, n).getAssigned()!=null){
+                    int x1 = t.getAssigned().getSpatialCol();
+                    int y1 = t.getAssigned().getSpatialRow();
+                    int x2 = this.get(m, n).getAssigned().getSpatialCol();
+                    int y2 = this.get(m, n).getAssigned().getSpatialRow();
+                    dist += Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2));
+                }
             }
         }
-        return sum / (this.getColumns()*this.getRows()*this.getColumns()*this.getRows());
+//        System.out.println("Tile " + i + "," + j);
+//        System.out.println("Init " + t.getAssigned().getSpatialCol() + "," + t.getAssigned().getInitRow());
+//        System.out.println(dist);
+        return dist;
+        
     }
     
     public Rectangle getBoundingBox() {

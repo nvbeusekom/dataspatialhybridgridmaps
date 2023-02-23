@@ -78,6 +78,57 @@ public class GeoJSONReader {
         return map;
     }
     
+    public static GeographicMap loadGeoJSON(GeographicMap upperMap, boolean notHierarch){
+        File file = null;
+        if(upperMap == null && !notHierarch){
+            file = new File("..\\data\\region.geojson");
+        }
+        else{
+            file = new File("..\\data\\LALowerTier.geojson");
+        }
+        String content = readFile(file);
+        JSONObject obj = new JSONObject(content);
+        JSONArray regions = obj.getJSONArray("features");
+        GeographicMap map = new GeographicMap();
+        // For every region
+        for (int i = 0; i < regions.length(); i++) {
+            JSONObject regObj = regions.getJSONObject(i);
+            Region r = new Region();
+            JSONArray coords = regObj.getJSONObject("geometry").getJSONArray("coordinates");
+            Polygon p = new Polygon();
+            if(regObj.getJSONObject("geometry").getString("type").equals("MultiPolygon")){
+                // For every polygon in the MultiPolygon
+                for (int j = 0; j < coords.length(); j++) {
+                    Polygon check = new Polygon();
+                    JSONArray polyArray = coords.getJSONArray(j).getJSONArray(0);
+                    // For every point in the polygon
+                    for (int k = 0; k < polyArray.length(); k++) {
+                        check.addVertex(new Vector(polyArray.getJSONArray(k).getDouble(0),polyArray.getJSONArray(k).getDouble(1)));
+                    }
+                    r.setShape(check);
+                }
+            }
+            else if(regObj.getJSONObject("geometry").getString("type").equals("Polygon")){
+                // For every point in the polygon
+                coords = coords.getJSONArray(0);
+                for (int k = 0; k < coords.length(); k++) {
+                    p.addVertex(new Vector(coords.getJSONArray(k).getDouble(0),coords.getJSONArray(k).getDouble(1)));
+                }
+                r.setShape(p);
+            }
+            else{
+                System.out.println("ERROR: SOME OTHER GEOMETRY APPEARED");
+            }
+            r.setPos(p.centroid());
+            r.setLabel(regObj.getJSONObject("properties").getString("label"));
+            if(upperMap!=null){
+                addRegion(r,upperMap);
+            }
+            map.add(r);
+        }
+        return map;
+    }
+    
     public static void addRegion(Region r, GeographicMap upperMap){
         outer:
         for(Region check : upperMap){

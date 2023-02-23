@@ -184,7 +184,9 @@ public class ColorGenerator {
     public Color getNlColor(double xPercentage, double yPercentage) {
         //point in the ijsselmeer in the netherlands
         double middleX = 315.0 / 573.0;
+//        double middleX = 226.0 / 374.0;
         double middleY = 451.0 / 666.0;
+//        double middleY = 221.0 / 371.0;
 
         double angle = getAngle(middleX, middleY, xPercentage, yPercentage);
         angle = (angle + 90 + 360.0) % 360.0;//rotate so opening is at the top
@@ -199,8 +201,10 @@ public class ColorGenerator {
         float distancePercentage = (float) (distance / maxDistance);
 
         float h = (0f + (360f - 0f) * anglePercentage) / 360f;
-        float s = 0.7f;
-        float b = 1f - distancePercentage * 0.8f;
+//        float s = 0.7f;
+        float s = 0.4f + distancePercentage * 0.5f;;
+//        float b = 1f - distancePercentage * 0.8f;
+        float b = Math.min(1,0.5f + distancePercentage * 0.6f);
 
         Color c = Color.getHSBColor(h, s, b);
         return c;
