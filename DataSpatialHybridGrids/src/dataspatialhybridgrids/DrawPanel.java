@@ -222,8 +222,15 @@ public class DrawPanel extends GeometryPanel {
                                 d = Math.sqrt(d);
                                 double size = tile.getLength()*d * 0.9;
     //                            Rectangle r = Circle.byCenterAndSize(tile.getCenter(),size,size);
+                                if(tile.getLabel() == data.labelOfSpecialRegion){
+                                    setFill(ExtendedColors.white,Hashures.SOLID);
+                                }
+                                
                                 Circle r = new Circle(tile.getCenter(),size/2);
                                 draw(r);
+                                if(tile.getLabel() == data.labelOfSpecialRegion){
+                                    setFill(ExtendedColors.black,Hashures.SOLID);
+                                }
                             }
                         }
                     }

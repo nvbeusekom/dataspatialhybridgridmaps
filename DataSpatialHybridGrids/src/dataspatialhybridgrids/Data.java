@@ -6,7 +6,7 @@ package dataspatialhybridgrids;
 
 import algorithms.ColorGenerator;
 import algorithms.DataSortAssignment;
-import algorithms.DataSpatialAssignment;
+import algorithms.DataSortAssignment.DataSort;
 import algorithms.GridGenerator;
 import algorithms.SpatialAssignment;
 import algorithms.SwapNearby;
@@ -66,6 +66,8 @@ public class Data {
     
     double spatialSlack = 0.01;
 
+    String labelOfSpecialRegion = "";
+    
     public void setSpatialSlack(double spatialSlack) {
         this.spatialSlack = spatialSlack;
     }
@@ -259,7 +261,8 @@ public class Data {
             for (double j = 0.01; j <= 0.01; j+=0.05) {
                 for (double k = 0.0001; k <= 0.0001; k+=0.0005) {
                     for (int l = 0; l < 1; l++) {
-                        Collections.shuffle(map);
+                        Random rnd = new Random(10);
+                        Collections.shuffle(map, rnd);
                         int index = 0;
                         for(Tile t: grid){
                             if(t.getAssigned() != null){
@@ -370,9 +373,9 @@ public class Data {
     public Grid improveMI(int range, Grid grid, GeographicMap map){
         sn = new SwapNearby(map,grid,spatialSlack);
 //        sn.betterSwap(range,dataFactor);
-        int maxIterations = 3000000;
-        double startT = 0.01 / Math.log(0.5);
-        double endT = 0.0001 / Math.log(0.000000001);
+        int maxIterations = 10000000;
+        double startT = 0.1 / Math.log(0.5);
+        double endT = 0.001 / Math.log(0.000000001);
         sn.setRange(range);
         sn.simAn(startT, endT, maxIterations);
         selectedx = -1;
@@ -399,9 +402,9 @@ public class Data {
 //        }
         sn = new SwapNearby(map,grid,spatialSlack);
         sn.setToSpatialGain();
-        int maxIterations = 3000000;
+        int maxIterations = 10000000;
         double startT = 1 / Math.log(0.5);
-        double endT = 0.01 / Math.log(0.000000001);
+        double endT = 0.05 / Math.log(0.000000001);
         sn.simAn(startT, endT, maxIterations);
         selectedx = -1;
         selectedy = -1;
@@ -422,6 +425,34 @@ public class Data {
         side.setSpatialDistortion(grid.getSpatialDistortion());
         draw.repaint();
     }
+    
+    public void createSpecialExample(){
+        Region minR = this.map.get(0);
+        for (Region r : this.map) {
+            double v = 0;
+            for (Polygon p : r.getShape()) {
+                v += p.areaUnsigned();
+            }
+            r.setData(v);
+            
+            if(r.getData() < minR.getData()){
+                minR = r;
+            }
+        }
+        labelOfSpecialRegion = minR.getLabel();
+        ArrayList<Region> regions = new ArrayList<>();
+        for(Region r : this.map){
+            regions.add(r);
+        }
+        regions.sort(new DataSortAssignment(this.grid,this.map).new DataSort());
+        
+        minR.setData(regions.get((int)(regions.size()*0.95)).getData());
+        
+        this.map.resetData();
+        
+        draw.repaint();
+    }
+    
     public void setDataColored(boolean b){
         draw.dataColored = b;
         draw.repaint();

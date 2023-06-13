@@ -45,13 +45,14 @@ public class SidePanel extends TabbedSidePanel {
         tab.addButton("Open France map and data", (e) -> {data.loadIPEMap(true);data.loadTSV(false,true);});
         tab.addButton("Open NL map and data", (e) -> {data.loadIPEMap(false);data.loadTSV(false,false);});
         tab.addButton("Open UK map and data", (e) -> {data.loadGeoJSONMap();data.loadCSV(false);});
+        tab.addButton("Make special example", (e) -> {data.createSpecialExample();});
         String[] options = {"NL","UK","US"};
         coloring = tab.addRadioButtonList(options, "NL", (a,s) -> data.loadColors(s));
         
 
         tab.makeSplit(2, 2);
-        JSpinner spinColsOuter = tab.addIntegerSpinner(18, 1, Integer.MAX_VALUE, 1, null);
-        JSpinner spinRowsOuter = tab.addIntegerSpinner(19, 1, Integer.MAX_VALUE, 1, null);
+        JSpinner spinColsOuter = tab.addIntegerSpinner(10, 1, Integer.MAX_VALUE, 1, null);
+        JSpinner spinRowsOuter = tab.addIntegerSpinner(10, 1, Integer.MAX_VALUE, 1, null);
 
         tab.addButton("Create grid", (e) -> data.createGrid((int) spinColsOuter.getValue(), (int) spinRowsOuter.getValue()));
         
@@ -65,9 +66,8 @@ public class SidePanel extends TabbedSidePanel {
         tab.addLabel("Range");
 //        JSlider rangeSlider = tab.addIntegerSlider(0, 0, 20,null);
         JSpinner spinRange = tab.addIntegerSpinner(0, 0, 100, 1, null);
-        tab.addButton("Compute (efficient)", (e) -> data.improveMI((int)spinRange.getValue()));
-        tab.addButton("Post process spatial", (e) -> data.improveSpatial((int)spinRange.getValue()));
-        tab.addButton("Compute (with selectedMI) - StackOverflows..", (e) -> data.randomimproveMI((int)spinRange.getValue()));
+        tab.addButton("Spatial -> Data (input spatial slack)", (e) -> data.improveMI((int)spinRange.getValue()));
+        tab.addButton("Data -> Spatial (input MI slack)", (e) -> data.improveSpatial((int)spinRange.getValue()));
         tab.makeSplit(2, 1);
         tab.addButton("Save", (e) -> data.saveGrid());
         tab.addButton("Load", (e) -> data.loadGrid());
@@ -83,8 +83,8 @@ public class SidePanel extends TabbedSidePanel {
         tab.addLabel("Tear distance");
         tab.addDoubleSpinner(2,0,Double.MAX_VALUE,1, (a,b) -> data.setTearCells(b));
         tab.makeSplit(2,1);
-        tab.addLabel("Spatial slack");
-        tab.addDoubleSpinner(0.01,0,40,0.01, (a,b) -> data.setSpatialSlack(b));
+        tab.addLabel("Spatial/Data slack");
+        tab.addDoubleSpinner(0.01,0,100000,0.01, (a,b) -> data.setSpatialSlack(b));
         tab.makeSplit(2,1);
         labeli = tab.addLabel("Morans I: 0");
         labeli.setSize(this.getSize().width,labeli.getSize().height);
@@ -106,11 +106,6 @@ public class SidePanel extends TabbedSidePanel {
         
         tab.addButton("Do all NL", (e) -> {data.loadHierarchicalIPE();data.createGrid(3,4);data.createInnerGrid(17,23);data.hierarch_SpatialSpatial();data.loadColors("UK");});
         tab.addButton("Open NL", (e) -> data.loadHierarchicalIPE());
-        
-        tab.makeSplit(2, 2);
-        
-        String[] options = {"NL","UK","US"};
-        coloring = tab.addRadioButtonList(options, "NL", (a,s) -> data.loadColors(s));
         
 
         tab.makeSplit(2, 2);

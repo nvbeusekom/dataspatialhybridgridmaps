@@ -27,6 +27,11 @@ public class GeographicMap extends ArrayList<Region> {
         return r;
     }
     
+    public void resetData(){
+        maxData = 0;
+        avgData = 0;
+    }
+    
     public double getMaxData(){
         if(maxData == 0){
             double max = Double.MIN_VALUE;

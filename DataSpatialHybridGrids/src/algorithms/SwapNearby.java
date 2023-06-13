@@ -131,7 +131,7 @@ public class SwapNearby {
 //            range = 1;
         }
         double initialMI = grid.getMoransI();
-        double initialS = grid.getSpatialDistortion2();
+        double initialS = grid.getSpatialDistortion();
         int maxDimension = Math.max(grid.getColumns(), grid.getRows());
         range = Math.min(range, maxDimension);
         double total = 0;
@@ -149,8 +149,8 @@ public class SwapNearby {
         double slack = similarity * total / map.size();
         double fac = Math.pow(endT / startT, 1.0/maxIterations);
         double T = startT;
-        Random rand = new Random();
-        double curCost = this.improvingSpace? grid.getSpatialDistortion2() : grid.getMoransI();
+        Random rand = new Random(10);
+        double curCost = this.improvingSpace? grid.getSpatialDistortion() : grid.getMoransI();
         double bestCost = curCost;
         Grid bestSolution = grid.clone();
         for (int iter = 0; iter < maxIterations; iter++) {
@@ -167,10 +167,10 @@ public class SwapNearby {
             t1.setAssigned(t2.getAssigned());
             t2.setAssigned(r1);
             
-            double newCost = this.improvingSpace? grid.getSpatialDistortion2() : grid.getMoransI();
+            double newCost = this.improvingSpace? grid.getSpatialDistortion() : grid.getMoransI();
             double prob = this.improvingSpace? Math.min(1.0, Math.exp((newCost - curCost)/T)) : Math.min(1.0, Math.exp((curCost - newCost)/T));
             // INSTRUCTION: Remove last or clause when using range implementation
-            if (Math.random() >= prob || (this.improvingSpace && initialMI - grid.getMoransI() > similarity) || (!this.improvingSpace && grid.getSpatialDistortion() - initialS > similarity)) {
+            if (rand.nextDouble() >= prob || (this.improvingSpace && initialMI - grid.getMoransI() > similarity) || (!this.improvingSpace && grid.getSpatialDistortion() - initialS > similarity)) {
                 //Undo swap
                 t2.setAssigned(t1.getAssigned());
                 t1.setAssigned(r1);

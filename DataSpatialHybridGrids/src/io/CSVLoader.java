@@ -61,7 +61,7 @@ public class CSVLoader {
 //                    categories,
 //                    categories[0]);
             String labelID = "label";
-            String dataID = "pop";
+            String dataID = "popDen";
 
             int labelIndex = 0;
             int dataIndex = 0;

@@ -57,7 +57,7 @@ public class DataSortAssignment {
         
     }
     
-    class DataSort implements Comparator<Region>{
+    public class DataSort implements Comparator<Region>{
         public int compare(Region a, Region b){
             return Double.compare(a.getData(), b.getData());
         }

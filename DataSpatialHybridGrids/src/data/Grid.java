@@ -227,7 +227,8 @@ public class Grid extends List2D<Tile> {
                         for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
                             if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
                                 adjacencies++;
-                                totalDist += Math.pow(t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos()),1);
+                                double dist = t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos()) / t.getShape().width();
+                                totalDist += Math.pow(dist,2);
                             }
                         }
                     }
@@ -236,11 +237,12 @@ public class Grid extends List2D<Tile> {
             }
             
         }
-        totalDist = 100 * totalDist / (this.getBoundingBox().width()* adjacencies);
-//        totalDist = 100 * Math.sqrt(totalDist) / (this.getBoundingBox().width()* adjacencies);
+//        totalDist = 100 * totalDist / (this.getBoundingBox().width()* adjacencies);
+        totalDist = totalDist / (adjacencies);
         return totalDist;
     
     }
+    
     public double getSpatialDistortion2(){
         double totalDist = 0;
         double adjacencies = 0;
@@ -256,7 +258,7 @@ public class Grid extends List2D<Tile> {
                                 adjacencies++;
                                 Vector v1 = Vector.subtract(t.getAssigned().getPos(),this.get(m, n).getAssigned().getPos());
                                 Vector v2 = Vector.subtract(t.getCenter(),this.get(m, n).getCenter());
-                                totalDist += v1.distanceTo(v2);
+                                totalDist += Math.pow(v1.distanceTo(v2) / t.getShape().width(),2);
                             }
                         }
                     }
@@ -265,7 +267,7 @@ public class Grid extends List2D<Tile> {
             }
             
         }
-        totalDist = 100 * totalDist / (this.getBoundingBox().width()* adjacencies);
+        totalDist = totalDist / (adjacencies);
 //        totalDist = 100 * Math.sqrt(totalDist) / (this.getBoundingBox().width()* adjacencies);
         return totalDist;
     }

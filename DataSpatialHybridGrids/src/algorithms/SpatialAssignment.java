@@ -4,13 +4,11 @@
  */
 package algorithms;
 
-import algorithms.PatchMover.Pair;
 import data.GeographicMap;
 import data.Grid;
 import com.quantego.clp.*;
 import data.Region;
 import data.Tile;
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -151,7 +149,7 @@ public class SpatialAssignment {
      */
     public double solveLP() {
         model.minimize();
-        double epsilon = 0.00001;
+        double epsilon = 0.001;
         for (CLPVariable v : variables) {
             if (Math.abs(model.getSolution(v) - 1) < epsilon) {
                 //there is a mapping from the site to the cell.
