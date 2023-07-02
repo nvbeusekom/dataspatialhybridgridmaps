@@ -46,6 +46,7 @@ public class DrawPanel extends GeometryPanel {
     double strokeSize = 0.4;
     boolean drawOverlay = false;
     boolean drawHigherBorders = true;
+    boolean normalHierarchical = true;
     
     @Override
     protected void drawScene() {
@@ -248,7 +249,7 @@ public class DrawPanel extends GeometryPanel {
             bbox1.translate(bbox1.width() * 3.5, 0);
             
             Rectangle bbox2 = data.grid.getBoundingBox().clone();
-            if(data.innerGrid != null){
+            if(data.innerGrid != null && normalHierarchical){
                 bbox2.scale(0.25,bbox2.center());
                 bbox2.translate(bbox2.width()*3.5, bbox1.height()+bbox1.height()/10);
             }
@@ -267,7 +268,7 @@ public class DrawPanel extends GeometryPanel {
                     Polygon p2 = p.clone();
                     p2.translate(c2c);
                     
-                    if(data.innerGrid != null){
+                    if(data.innerGrid != null && normalHierarchical){
                         toCenter=Vector.divide(toCenter, 4);
                         p2.scale(0.25,p2.centroid());
                     }
@@ -281,7 +282,7 @@ public class DrawPanel extends GeometryPanel {
                 ci++;
             }
             
-            if(data.innerGrid != null){
+            if(data.innerGrid != null && normalHierarchical){
                 Grid legendGrid = GridGenerator.generateSquareGrid(data.grid.getColumns(), data.grid.getRows(), bbox1, true);
                 for (int i = 0; i < legendGrid.getColumns(); i++) {
                     for (int j = 0; j < legendGrid.getRows(); j++) {

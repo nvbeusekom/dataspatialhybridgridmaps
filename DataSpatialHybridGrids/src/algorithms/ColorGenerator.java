@@ -54,6 +54,10 @@ public class ColorGenerator {
             xCoords.add(r.getPos().getX());
             yCoords.add(r.getPos().getY());
         }
+        System.out.println(minX);
+        System.out.println(maxX);
+        System.out.println(minY);
+        System.out.println(maxY);
 
         //get color ranges
         //start at hsl color and change luminance value
@@ -154,15 +158,45 @@ public class ColorGenerator {
         }
     }
     
+//    public Color getUKColor(double xPercentage, double yPercentage) {
+//
+//        //hue vertical, brightness horizontal
+//        float huePercentage = (float) yPercentage;
+//        float brightnessPercentage = (float) xPercentage;
+//
+//        float h = (1f*huePercentage + 0f) % 1f;
+//        float s = 0.7f;
+//        float b = 1f - brightnessPercentage * 0.7f;
+//
+//        Color c = Color.getHSBColor(h, s, b);
+//        return c;
+//    }
+    
     public Color getUKColor(double xPercentage, double yPercentage) {
+        //point in the ijsselmeer in the netherlands
+//        double middleX = 315.0 / 573.0;
 
-        //hue vertical, brightness horizontal
-        float huePercentage = (float) yPercentage;
-        float brightnessPercentage = (float) xPercentage;
+        double middleX = (647815.0869810153+91546.45671428864)/(647815.0869810153*1.8);
+//        double middleY = 451.0 / 666.0;
+        double middleY = (11138.636845829033+594161.0720733674)/(594161.0720733674*2.2);
 
-        float h = (1f*huePercentage + 0f) % 1f;
-        float s = 0.7f;
-        float b = 1f - brightnessPercentage * 0.7f;
+        double angle = getAngle(middleX, middleY, xPercentage, yPercentage);
+        angle = (angle + 90 + 360.0) % 360.0;//rotate so opening is at the top
+        double distance = getDistance(middleX, middleY, xPercentage, yPercentage);
+
+        double maxDistance = getDistance(middleX, middleY, 1, 1);
+        maxDistance = Math.max(maxDistance, getDistance(middleX, middleY, 0, 0));
+        maxDistance = Math.max(maxDistance, getDistance(middleX, middleY, 0, 1));
+        maxDistance = Math.max(maxDistance, getDistance(middleX, middleY, 1, 0));
+
+        float anglePercentage = (float) angle / 360f;
+        float distancePercentage = (float) (distance / maxDistance);
+
+        float h = (0f + (360f - 0f) * anglePercentage) / 360f;
+//        float s = 0.7f;
+        float s = 0.4f + distancePercentage * 0.5f;;
+//        float b = 1f - distancePercentage * 0.8f;
+        float b = Math.min(1,0.5f + distancePercentage * 0.6f);
 
         Color c = Color.getHSBColor(h, s, b);
         return c;

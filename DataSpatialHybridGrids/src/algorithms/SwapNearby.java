@@ -134,23 +134,13 @@ public class SwapNearby {
         double initialS = grid.getSpatialDistortion();
         int maxDimension = Math.max(grid.getColumns(), grid.getRows());
         range = Math.min(range, maxDimension);
-        double total = 0;
-        int count = 0;
-        for (int i = 0; i < grid.getColumns(); i++) {
-            for (int j = 0; j < grid.getRows(); j++) {
-                if(grid.get(i,j).getAssigned() != null){
-                    total += grid.get(i,j).getData();
-                    count++;
-                }
-            }
-            
-        }
         System.out.println("Similarity: " + this.similarity);
-        double slack = similarity * total / map.size();
         double fac = Math.pow(endT / startT, 1.0/maxIterations);
         double T = startT;
         Random rand = new Random(10);
-        double curCost = this.improvingSpace? grid.getSpatialDistortion() : grid.getMoransI();
+        double curCost = this.improvingSpace? initialS : initialMI;
+        double curS = initialS;
+        double curMI = initialMI;
         double bestCost = curCost;
         Grid bestSolution = grid.clone();
         for (int iter = 0; iter < maxIterations; iter++) {
@@ -159,24 +149,52 @@ public class SwapNearby {
 //            Swap s = this.improvingSpace? getRandomSwap(rand) : getRandomSwap(rand,this.range);
             // INSTRUCTION: For the S deviation implementation (takes the similarity as the that it may increase S)
             Swap s = getRandomSwap(rand);
+            
+            double deltaS = grid.getLocalSpatialDistortion2(s.getI(), s.getJ()) + grid.getLocalSpatialDistortion2(s.getK(), s.getL()) - grid.getLocalSAdjacency(s.getI(), s.getJ(), s.getK(), s.getL());
+            double deltaMI = grid.getLocalMoransI(s.getI(), s.getJ()) + grid.getLocalMoransI(s.getK(), s.getL()) - grid.getLocalMIAdjacency(s.getI(), s.getJ(), s.getK(), s.getL());
+            
             Tile t1 = grid.get(s.getI(), s.getJ());
             Tile t2 = grid.get(s.getK(), s.getL());
-             
+            
             // Do swap
             Region r1 = t1.getAssigned();
             t1.setAssigned(t2.getAssigned());
             t2.setAssigned(r1);
             
-            double newCost = this.improvingSpace? grid.getSpatialDistortion() : grid.getMoransI();
+            double newS = curS - deltaS + grid.getLocalSpatialDistortion2(s.getI(), s.getJ()) + grid.getLocalSpatialDistortion2(s.getK(), s.getL())  - grid.getLocalSAdjacency(s.getI(), s.getJ(), s.getK(), s.getL());
+            double newMI = curMI - deltaMI + grid.getLocalMoransI(s.getI(), s.getJ()) + grid.getLocalMoransI(s.getK(), s.getL())  - grid.getLocalMIAdjacency(s.getI(), s.getJ(), s.getK(), s.getL());
+            
+//            if(Math.abs(newS - grid.getSpatialDistortion()) > 0.0001 ){
+//                System.out.println("===");
+//                System.out.println(newS);
+//                System.out.println(grid.getSpatialDistortion());
+//                t2.setAssigned(t1.getAssigned());
+//                t1.setAssigned(r1);
+//                System.out.println("---");
+//                return;
+//            }
+//            if(Math.abs(newMI - grid.getMoransI()) > 0.0001){
+//                System.out.println("===");
+//                System.out.println(newMI);
+//                System.out.println(grid.getMoransI());
+//                t2.setAssigned(t1.getAssigned());
+//                t1.setAssigned(r1);
+//                System.out.println("---");
+//                return;
+//            }
+            
+            double newCost = this.improvingSpace? newS : newMI;
             double prob = this.improvingSpace? Math.min(1.0, Math.exp((newCost - curCost)/T)) : Math.min(1.0, Math.exp((curCost - newCost)/T));
             // INSTRUCTION: Remove last or clause when using range implementation
-            if (rand.nextDouble() >= prob || (this.improvingSpace && initialMI - grid.getMoransI() > similarity) || (!this.improvingSpace && grid.getSpatialDistortion() - initialS > similarity)) {
+            if (rand.nextDouble() >= prob || (this.improvingSpace && initialMI - newMI > similarity) || (!this.improvingSpace && newS - initialS > similarity)) {
                 //Undo swap
                 t2.setAssigned(t1.getAssigned());
                 t1.setAssigned(r1);
             }
             else { 
                 curCost = newCost;
+                curS = newS;
+                curMI = newMI;
             }
             boolean better = this.improvingSpace ? curCost < bestCost : bestCost < curCost;
             if(better){
@@ -185,7 +203,7 @@ public class SwapNearby {
             }
             T *= fac;
 
-            if (iter%10000 == 0) System.out.println(curCost);
+            if (iter%1000000 == 0) System.out.println(curCost);
             
         }
         grid = bestSolution;
@@ -256,7 +274,7 @@ public class SwapNearby {
         return new Swap(0,i,j,k,l);
     }
     
-    // Local search
+    // Local search - not recommended
     public void betterSwap(int range, double dataSpatial){
         if(range < this.range){
             this.range = range;

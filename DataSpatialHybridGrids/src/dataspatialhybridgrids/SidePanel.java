@@ -147,6 +147,7 @@ public class SidePanel extends TabbedSidePanel {
                                                             data.hierarch_DataData((int)spinRange.getValue(),(int)lowSpinRange.getValue());}});
         
         tab.addButton("Save to Ipe", (e) -> data.saveIPE());
+        tab.addButton("Regular spatial assignment", (e) -> data.lowLevelOnlySpatial());
         
         
         tab.makeSplit(2, 1);

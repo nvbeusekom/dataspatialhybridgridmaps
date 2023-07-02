@@ -229,7 +229,6 @@ public class Data {
             
         }
         side.setMoransI(grid.getMoransI());
-        side.setGearysC(grid.getGearysC());
         side.setSpatialDistortion(grid.getSpatialDistortion());
         draw.repaint();
         
@@ -239,6 +238,8 @@ public class Data {
         assignToGridData(this.grid);
     }
     
+    
+    
     public void assignToGridData(Grid grid){
         DataSortAssignment sa = new DataSortAssignment(grid,map);
         sa.assign();
@@ -247,7 +248,6 @@ public class Data {
             sn.setInitGrid(grid);
         }
         side.setMoransI(grid.getMoransI());
-        side.setGearysC(grid.getGearysC());
         side.setSpatialDistortion(grid.getSpatialDistortion());
         draw.repaint();
         
@@ -273,7 +273,7 @@ public class Data {
                         int maxIterations = i;
                         double startT = j / Math.log(0.5);
                         double endT = k / Math.log(0.000000001);
-                        sn = new SwapNearby(map,grid,spatialSlack);
+                        sn = new SwapNearby(map,grid,Double.MAX_VALUE);
                         System.out.println("Running j = " + j + ", k = " + k + ", i = " + i);
                         sn.simAn(startT, endT, maxIterations);
                         System.out.println("MI: " + sn.getGrid().getMoransI());
@@ -291,7 +291,6 @@ public class Data {
         selectedy = -1;
         this.grid = bestGrid;
         side.setMoransI(grid.getMoransI());
-        side.setGearysC(grid.getGearysC());
         side.setSpatialDistortion(grid.getSpatialDistortion());
         draw.repaint();
         
@@ -310,7 +309,7 @@ public class Data {
                     
                     // For debug
                     if(sn!= null){
-                        side.setProminence(sn.getMIatLoc(i, j, grid.getTotal(), grid.getCount()));
+                        side.setProminence(sn.getMIatLoc(i, j, grid.getTotal(), (int)grid.getCount()));
                         return;
                     }
                     // End debug
@@ -353,8 +352,7 @@ public class Data {
                         if(sn == null){
                             sn = new SwapNearby(map,grid,spatialSlack);
                         }
-                        System.out.println(sn.getSwapGain(i, j, selectedx, selectedy, grid.getTotal(), grid.getCount()));
-                        System.out.println(grid.adjacentSquaredDistances(i, j));
+                        System.out.println(sn.getSwapGain(i, j, selectedx, selectedy, grid.getTotal(), (int)grid.getCount()));
                         return;
                     }
                 }
@@ -365,7 +363,6 @@ public class Data {
     public void improveMI(int range){
         this.grid = improveMI(range, grid, map);
         side.setMoransI(grid.getMoransI());
-        side.setGearysC(grid.getGearysC());
         side.setSpatialDistortion(grid.getSpatialDistortion());
         draw.repaint();
     }
@@ -388,7 +385,6 @@ public class Data {
     public void improveSpatial(int range){
         this.grid = improveSpatial(range,grid,map);
         side.setMoransI(grid.getMoransI());
-        side.setGearysC(grid.getGearysC());
         System.out.println("S:");
         System.out.println(grid.getSpatialDistortion());
         side.setSpatialDistortion(grid.getSpatialDistortion());
@@ -404,7 +400,7 @@ public class Data {
         sn.setToSpatialGain();
         int maxIterations = 10000000;
         double startT = 1 / Math.log(0.5);
-        double endT = 0.05 / Math.log(0.000000001);
+        double endT = 0.01 / Math.log(0.000000001);
         sn.simAn(startT, endT, maxIterations);
         selectedx = -1;
         selectedy = -1;
@@ -421,19 +417,22 @@ public class Data {
         selectedy = -1;
         this.grid = sn.getGrid();
         side.setMoransI(grid.getMoransI());
-        side.setGearysC(grid.getGearysC());
         side.setSpatialDistortion(grid.getSpatialDistortion());
         draw.repaint();
     }
     
     public void createSpecialExample(){
+        Random rnd = new Random(10);
         Region minR = this.map.get(0);
         for (Region r : this.map) {
             double v = 0;
             for (Polygon p : r.getShape()) {
-                v += p.areaUnsigned();
+//                v += p.areaUnsigned();
+                double noise = (rnd.nextDouble() - 0.5) * 4 * (grid.get(0, 0).getLength());
+                v += p.centroid().getY() + noise;
+                
             }
-            r.setData(v);
+            r.setData(v/r.getShape().size());
             
             if(r.getData() < minR.getData()){
                 minR = r;
@@ -446,10 +445,11 @@ public class Data {
         }
         regions.sort(new DataSortAssignment(this.grid,this.map).new DataSort());
         
-        minR.setData(regions.get((int)(regions.size()*0.95)).getData());
+        minR.setData(regions.get((int)(regions.size()*0.9)).getData());
         
         this.map.resetData();
-        
+        this.grid.resetData();
+        this.side.setMoransI(this.grid.getMoransI());
         draw.repaint();
     }
     
@@ -556,10 +556,12 @@ public class Data {
                 ArrayList<Vector> preservedCenters = new ArrayList();
                 for (Region innerRegion : localMap) {
                     preservedCenters.add(innerRegion.getPos().clone());
-                    Vector translation = Vector.divide(Vector.subtract(innerRegion.getPos(),localBox.center()),Math.max(localBox.height()/t.getShape().height(),localBox.width()/t.getShape().width())*1 );//innerGrid.getColumns()+innerGrid.getRows());
+//                    double lambda = Math.max(localBox.height()/t.getShape().height(),localBox.width()/t.getShape().width())*1;
+                    double lambda = this.grid.get(0, 0).getLength() * (this.grid.getColumns() + this.grid.getRows());
+                    Vector translation = Vector.divide(Vector.subtract(innerRegion.getPos(),localBox.center()),lambda);//innerGrid.getColumns()+innerGrid.getRows());
 //                    Vector translation = Vector.divide(Vector.subtract(innerRegion.getPos(),localBox.center()),innerGrid.getColumns()+innerGrid.getRows());
-//                    Vector newPos = Vector.add(r.getPos(), translation);
-                    Vector newPos = Vector.add(t.getCenter(), translation);
+                    Vector newPos = Vector.add(r.getPos(), translation);
+//                    Vector newPos = Vector.add(t.getCenter(), translation);
 //                    Vector newPos = Vector.add(closerToCenter, translation);
                     innerRegion.setPos(newPos);
                     alteredMap.add(innerRegion);
@@ -578,6 +580,13 @@ public class Data {
                 index++;
             }
         }
+        draw.repaint();
+    }
+    
+    public void lowLevelOnlySpatial(){
+        innerGrid.clearGrid();
+        SpatialAssignment sa2 = new SpatialAssignment(innerGrid,lowerMap);
+        sa2.solveLP();
         draw.repaint();
     }
     

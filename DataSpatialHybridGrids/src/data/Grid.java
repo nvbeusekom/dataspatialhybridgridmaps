@@ -19,9 +19,18 @@ import nl.tue.geometrycore.geometry.linear.Rectangle;
 public class Grid extends List2D<Tile> {
     
     private double total = 0;
-    private int count = 0;
+    private double adjacencies = 0;
+    private double count = 0;
+    private double MIDenom = 0;
     private boolean adjacentMI = true;
 
+    public void resetData(){
+        total = 0;
+        adjacencies = 0;
+        count = 0;
+        MIDenom = 0;
+    }
+    
     public void setAdjacentMI(boolean adjacentMI) {
         this.adjacentMI = adjacentMI;
     }
@@ -35,23 +44,11 @@ public class Grid extends List2D<Tile> {
     }
     
     public double getMoransI(){
-        if(!adjacentMI){
-            return getConsiderateMoransI();
-        }
-        double N = 0;
+        double N = getCount();
         
         
-        double meank = 0;
-        for (int i = 0; i < this.getColumns(); i++) {
-            for (int j = 0; j < this.getRows(); j++) {
-                if(this.get(i, j).getAssigned() != null){
-                    meank += this.get(i,j).getData();
-                    N++;
-                }
-            }
-            
-        }
-        double W = N * 4;
+        double meank = getTotal();
+        double W = getAdjacencies();
         double num = 0;
         double denom = 0;
         for (int j = 0; j < this.getColumns(); j++) {
@@ -59,7 +56,6 @@ public class Grid extends List2D<Tile> {
                 if(this.get(j,i).getAssigned() != null){
                     denom += Math.pow(this.get(j,i).getData() - (meank/N), 2);
                     double innersum = 0;
-                    double neighbours = 0;
                     for (int y = Math.max(0,j-1); y < Math.min(this.getColumns(),j+2); y++) {
                         for (int x = Math.max(0,i-1); x < Math.min(this.getRows(),i+2); x++) {
                             if(y != j || x != i){
@@ -73,12 +69,10 @@ public class Grid extends List2D<Tile> {
                                     if(i - x >= -1 && i - x <= 1 && j == y){
 //                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
                                         innersum += (this.get(j,i).getData() - (meank/N)) * (this.get(y,x).getData() - (meank/N));
-                                        neighbours++;
                                     }
                                     if(i == x && j - y >= -1 && j - y <= 1){
 //                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
                                         innersum += (this.get(j,i).getData() - (meank/N)) * (this.get(y,x).getData() - (meank/N));
-                                        neighbours++;
                                     }
                                 }
                             }
@@ -98,110 +92,125 @@ public class Grid extends List2D<Tile> {
         return ((N/W) * (num/denom));
     }
     
+    
+    // Computes Local MI, accounts for double counting.
+    public double getLocalMoransI(int i, int j){
+        double N = getCount();
+        double meank = getTotal();
+        double W = getAdjacencies();
+        double num = 0;
+        if(this.get(i,j).getAssigned() != null){
+            double innersum = 0;
+            for (int x = Math.max(0,i-1); x < Math.min(this.getColumns(),i+2); x++) {
+                for (int y = Math.max(0,j-1); y < Math.min(this.getRows(),j+2); y++) {
+                    if(x != i || j != y){
+                        // Counting Diagonal Neighbours
+    //                            if(i - x >= -1 && i - x <= 1 && y - j >= -1 && y - j <= 1){
+    //                                innersum += (permuted[j][i] * N - meank) * (permuted[y][x] * N - meank);
+    //                            }
+                        // Not Counting Diagonal Neighbours
+                        if(this.get(x,y).getAssigned() != null){
+                            if(i - x >= -1 && i - x <= 1 && j == y){
+    //                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
+                                innersum += (this.get(i,j).getData() - (meank/N)) * (this.get(x,y).getData() - (meank/N));
+                            }
+                            if(i == x && j - y >= -1 && j - y <= 1){
+    //                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
+                                innersum += (this.get(i,j).getData() - (meank/N)) * (this.get(x,y).getData() - (meank/N));
+                            }
+                        }
+                    }
+                }
+            }
+            num += innersum;
+        }
+        double denom = getMIDenom();
+        return 2 * ((N/W) * (num/denom));
+    }
+    
+    // Factors in double counting
+    public double getLocalMIAdjacency(int i, int j, int k , int l){
+        // Check if adjacent
+        if((i == k && Math.abs(j-l) == 1) || (j == l && Math.abs(i-k) == 1)){
+            double N = getCount();
+            double meank = getTotal();
+            double W = getAdjacencies();
+            double denom = getMIDenom();
+            double num = (this.get(i,j).getData() - (meank/N)) * (this.get(k,l).getData() - (meank/N));
+            return 2 * ((N/W) * (num/denom));
+        }
+        return 0;
+    }
+        
+    
     public void clearGrid(){
         for (Tile t : this){
             t.setAssigned(null);
         }
     }
     
-    public double getGearysC(){
-        double N = 0;
-        double meank = 0;
-        for (int i = 0; i < this.getColumns(); i++) {
-            for (int j = 0; j < this.getRows(); j++) {
-                if(this.get(i, j).getAssigned() != null){
-                    meank += this.get(i,j).getData();
-                    N++;
-                }
-            }
-            
-        }
-        double W = N * 4;
-        double num = 0;
-        double denom = 0;
-        for (int j = 0; j < this.getColumns(); j++) {
-            for (int i = 0; i < this.getRows(); i++) {
-                if(this.get(j,i).getAssigned() != null){
-                    denom += Math.pow(this.get(j,i).getData() - (meank/N), 2);
-                    double innersum = 0;
-                    double neighbours = 0;
-                    for (int y = Math.max(0,j-1); y < Math.min(this.getColumns(),j+2); y++) {
-                        for (int x = Math.max(0,i-1); x < Math.min(this.getRows(),i+2); x++) {
-                            if(y != j || x != i){
-                                // Not Counting Diagonal Neighbours
-                                if(this.get(y,x).getAssigned() != null){
-                                    if(i - x >= -1 && i - x <= 1 && j == y){
-//                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
-                                        innersum += Math.pow(this.get(j,i).getData() - this.get(y,x).getData(),2);
-                                        neighbours++;
-                                    }
-                                    if(i == x && j - y >= -1 && j - y <= 1){
-//                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
-                                        innersum += Math.pow(this.get(j,i).getData() - this.get(y,x).getData(),2);
-                                        neighbours++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-//                    innersum = 8/neighbours * innersum;
-                    innersum = (4/neighbours) * innersum;
-                    num += innersum;
-                }
-            }
-        }
-        if(num == 0 && denom == 0){
-            return 0;
-        }
-//        return num;
-//        return ((N/W) * (num/denom))/(N*N);
-        return (N-1)*num/(2*W*denom);
-    }
+//    public double getGearysC(){
+//        double N = 0;
+//        double meank = 0;
+//        for (int i = 0; i < this.getColumns(); i++) {
+//            for (int j = 0; j < this.getRows(); j++) {
+//                if(this.get(i, j).getAssigned() != null){
+//                    meank += this.get(i,j).getData();
+//                    N++;
+//                }
+//            }
+//            
+//        }
+//        double W = N * 4;
+//        double num = 0;
+//        double denom = 0;
+//        for (int j = 0; j < this.getColumns(); j++) {
+//            for (int i = 0; i < this.getRows(); i++) {
+//                if(this.get(j,i).getAssigned() != null){
+//                    denom += Math.pow(this.get(j,i).getData() - (meank/N), 2);
+//                    double innersum = 0;
+//                    double neighbours = 0;
+//                    for (int y = Math.max(0,j-1); y < Math.min(this.getColumns(),j+2); y++) {
+//                        for (int x = Math.max(0,i-1); x < Math.min(this.getRows(),i+2); x++) {
+//                            if(y != j || x != i){
+//                                // Not Counting Diagonal Neighbours
+//                                if(this.get(y,x).getAssigned() != null){
+//                                    if(i - x >= -1 && i - x <= 1 && j == y){
+////                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
+//                                        innersum += Math.pow(this.get(j,i).getData() - this.get(y,x).getData(),2);
+//                                        neighbours++;
+//                                    }
+//                                    if(i == x && j - y >= -1 && j - y <= 1){
+////                                        innersum += (this.get(j,i).getData() * N - meank) * (this.get(y,x).getData() * N - meank);
+//                                        innersum += Math.pow(this.get(j,i).getData() - this.get(y,x).getData(),2);
+//                                        neighbours++;
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+////                    innersum = 8/neighbours * innersum;
+//                    innersum = (4/neighbours) * innersum;
+//                    num += innersum;
+//                }
+//            }
+//        }
+//        if(num == 0 && denom == 0){
+//            return 0;
+//        }
+////        return num;
+////        return ((N/W) * (num/denom))/(N*N);
+//        return (N-1)*num/(2*W*denom);
+//    }
     
-    public double getConsiderateMoransI(){
-        double maxDist = this.get(0,0).getCenter().distanceTo(this.get(this.getColumns()-1, this.getRows()-1).getCenter());
-        
-        double N = 0;
-        double W = 0;
-        
-        double meank = 0;
-        for (int i = 0; i < this.getColumns(); i++) {
-            for (int j = 0; j < this.getRows(); j++) {
-                if(this.get(i, j).getAssigned() != null){
-                    N++;
-                    meank += this.get(i,j).getData();
-                }
-            }
-            
-        }
-        double num = 0;
-        double denom = 0;
-        for (Tile t1 : this) {
-                if(t1.getAssigned() != null){
-                    denom += Math.pow(t1.getData() - (meank/N), 2);
-                    double innersum = 0;
-                    for (Tile t2 : this) {
-                                if(t2.getAssigned() != null && t1 != t2){
-                                    double weight = maxDist - t1.getCenter().distanceTo(t2.getCenter());
-                                    innersum += weight * (t1.getData() - (meank/N)) * (t2.getData() - (meank/N));
-                                    W += weight;
-                                }
-                    }
-                    num += innersum;
-                }
-        }
-        if(num == 0 && denom == 0){
-            return 1;
-        }
-//        return ((N/W) * (num/denom))/(N*N);
-        return ((N/W) * (num/denom));
-    }
     
 //    public double getSwappedMoransI(int x, int y, int p, int q){
 //        return 1;
 //    }
     
+    // Direction oblvious metric
     public double getSpatialDistortion(){
+        return getSpatialDistortion2();
 //        double sum = 0;
 //        double norm = this.get(0,0).getLength();
 //        for(Tile t1 : this){
@@ -215,47 +224,45 @@ public class Grid extends List2D<Tile> {
 //            }
 //        }
 //        return sum / (this.getColumns()*this.getRows()*this.getColumns()*this.getRows());
-        double totalDist = 0;
-        double adjacencies = 0;
-        double regions = 0;
-        for (int i = 0; i < this.getColumns(); i++) {
-            for (int j = 0; j < this.getRows(); j++) {
-                Tile t = this.get(i,j);
-                if(t.getAssigned() != null){
-                    regions++;
-                    for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
-                        for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
-                            if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
-                                adjacencies++;
-                                double dist = t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos()) / t.getShape().width();
-                                totalDist += Math.pow(dist,2);
-                            }
-                        }
-                    }
-                }
-                
-            }
-            
-        }
-//        totalDist = 100 * totalDist / (this.getBoundingBox().width()* adjacencies);
-        totalDist = totalDist / (adjacencies);
-        return totalDist;
+        
+
+//        double totalDist = 0;
+//        double adjacencies = 0;
+//        double regions = 0;
+//        for (int i = 0; i < this.getColumns(); i++) {
+//            for (int j = 0; j < this.getRows(); j++) {
+//                Tile t = this.get(i,j);
+//                if(t.getAssigned() != null){
+//                    regions++;
+//                    for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
+//                        for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
+//                            if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
+//                                adjacencies++;
+//                                double dist = t.getAssigned().getPos().distanceTo(this.get(m, n).getAssigned().getPos()) / t.getShape().width();
+//                                totalDist += Math.pow(dist,2);
+//                            }
+//                        }
+//                    }
+//                }
+//                
+//            }
+//            
+//        }
+////        totalDist = 100 * totalDist / (this.getBoundingBox().width()* adjacencies);
+//        totalDist = totalDist / (adjacencies);
+//        return totalDist;
     
     }
     
     public double getSpatialDistortion2(){
         double totalDist = 0;
-        double adjacencies = 0;
-        double regions = 0;
         for (int i = 0; i < this.getColumns(); i++) {
             for (int j = 0; j < this.getRows(); j++) {
                 Tile t = this.get(i,j);
                 if(t.getAssigned() != null){
-                    regions++;
                     for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
                         for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
                             if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
-                                adjacencies++;
                                 Vector v1 = Vector.subtract(t.getAssigned().getPos(),this.get(m, n).getAssigned().getPos());
                                 Vector v2 = Vector.subtract(t.getCenter(),this.get(m, n).getCenter());
                                 totalDist += Math.pow(v1.distanceTo(v2) / t.getShape().width(),2);
@@ -267,10 +274,66 @@ public class Grid extends List2D<Tile> {
             }
             
         }
-        totalDist = totalDist / (adjacencies);
+        totalDist = totalDist / this.getAdjacencies();
 //        totalDist = 100 * Math.sqrt(totalDist) / (this.getBoundingBox().width()* adjacencies);
         return totalDist;
     }
+    
+    
+    // Accounts for double counting in original method
+    public double getLocalSpatialDistortion2(int i,int j){
+        Tile t = this.get(i,j);
+        double totalDist = 0;
+        if(t.getAssigned() != null){
+            for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
+                for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
+                    if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
+                        Vector v1 = Vector.subtract(t.getAssigned().getPos(),this.get(m, n).getAssigned().getPos());
+                        Vector v2 = Vector.subtract(t.getCenter(),this.get(m, n).getCenter());
+                        totalDist += Math.pow(v1.distanceTo(v2) / t.getShape().width(),2);
+                    }
+                }
+            }
+        }
+        return 2 * totalDist / getAdjacencies();
+    }
+    
+    // Factors in double counting
+    public double getLocalSAdjacency(int i, int j, int k , int l){
+        // Check if adjacent
+        if((i == k && Math.abs(j-l) == 1) || (j == l && Math.abs(i-k) == 1)){
+            Tile t = this.get(i,j);
+            Vector v1 = Vector.subtract(t.getAssigned().getPos(),this.get(k, l).getAssigned().getPos());
+            Vector v2 = Vector.subtract(t.getCenter(),this.get(k, l).getCenter());
+            double totalDist = Math.pow(v1.distanceTo(v2) / t.getShape().width(),2);
+            return 2 * totalDist / getAdjacencies();
+        }
+        return 0;
+    }
+    
+    public double getAdjacencies(){
+        if(adjacencies > 0){
+            return adjacencies;
+        }
+        for (int i = 0; i < this.getColumns(); i++) {
+            for (int j = 0; j < this.getRows(); j++) {
+                Tile t = this.get(i,j);
+                if(t.getAssigned() != null){
+                    for (int m = Math.max(0, i-1); m <= Math.min(this.getColumns()-1, i+1); m++) {
+                        for (int n = Math.max(0, j-1); n <= Math.min(this.getRows()-1, j+1); n++) {
+                            if(this.get(m, n).getAssigned()!=null && (m == i ^ n == j)){
+                                adjacencies++;
+                            }
+                        }
+                    }
+                }
+                
+            }
+            
+        }
+        return adjacencies;
+    }
+    
     
     public double adjacentSquaredDistances(int i, int j){
 ////        double dist = Double.POSITIVE_INFINITY;
@@ -338,7 +401,7 @@ public class Grid extends List2D<Tile> {
         return total;
     }
     
-    public int getCount(){
+    public double getCount(){
         if(count > 0){
             return count;
         }
@@ -351,6 +414,26 @@ public class Grid extends List2D<Tile> {
             
         }
         return count;
+    }
+    
+    public double getMIDenom(){
+        if(MIDenom > 0){
+            return MIDenom;
+        }
+        double N = getCount();
+        
+        
+        double meank = getTotal();
+        double denom = 0;
+        for (int j = 0; j < this.getColumns(); j++) {
+            for (int i = 0; i < this.getRows(); i++) {
+                if(this.get(j,i).getAssigned() != null){
+                    denom += Math.pow(this.get(j,i).getData() - (meank/N), 2);
+                }
+            }
+        }
+        MIDenom = denom;
+        return MIDenom;
     }
     
     @Override
